@@ -1,0 +1,35 @@
+{
+    "name": "ptr2e-modifications",
+    "title": "PTR 2e Modifications",
+    "description": "Modifications that didn't make it into the core system.",
+    "authors": [
+        {
+            "name": "RightHandOfVecna",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "version": "0.1.0",
+    "compatibility": {
+        "minimum": "12",
+        "verified": "12"
+    },
+    "relationships": {
+        "systems": [
+            {
+                "id": "ptr2e",
+                "type": "system",
+                "manifest": "https://2e.ptr.wiki/foundry/download?repo=ptr2e&type=json",
+                "compatibility": {
+                    "verified": "0.10.0-alpha.2.2.1"
+                }
+            }
+        ]
+    },
+    "esmodules": [
+        "/js/main.mjs"
+    ],
+    "url": "",
+    "manifest": "",
+    "download": ""
+}
