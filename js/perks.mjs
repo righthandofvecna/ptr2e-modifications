@@ -119,7 +119,7 @@ function actorMeetsPrerequisites(actor, perk, isRoot) {
 
   if (available < cost) return false;
 
-  if (isRoot) return true;
+  if (perk?.system?.node?.type === "root") return true;
 
   if (prerequisites.size == 0) return true;
 
@@ -148,7 +148,7 @@ function perkStore_updatePerkState(currentPerk, actor, manager) {
       if(isRootPerk) connectedPerk.system.cost = 1;
       
       //TODO: Implement proper prerequisite checking
-      if(actorMeetsPrerequisites(actor, connectedPerk, isRootPerk)) {
+      if(actorMeetsPrerequisites(actor, connectedPerk)) {
           connectedNode.state = PerkState.available;
           continue;
       }
@@ -175,7 +175,7 @@ function perkStore_tryUpdatePerkState(currentNode, actor, manager) {
       if(isRootNode) currentNode.perk.system.cost = connectedPerk.system.cost;
 
       //TODO: Implement proper prerequisite checking
-      if(actorMeetsPrerequisites(actor, currentNode?.perk, isRootNode)) {
+      if(actorMeetsPrerequisites(actor, currentNode?.perk)) {
           currentNode.state = PerkState.available;
       }
       currentNode.state = PerkState.connected;
