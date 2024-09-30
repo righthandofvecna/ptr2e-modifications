@@ -115,7 +115,12 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
   const subPrereqs = prereq.split(/ or /i);
   if (subPrereqs.length > 1) {
     for (const subPrereq of subPrereqs) {
-      if (actorMeetsPrerequisite(actor, subPrereq, false)) return returnVal;
+      const { value: subValue, known: subKnown } = actorMeetsPrerequisite(actor, subPrereq, false);
+      if (!subValue) {
+        returnVal.value = subValue;
+        returnVal.known = subKnown;
+        return returnVal
+      }
     }
   }
   
@@ -184,8 +189,6 @@ function actorMeetsPrerequisites(actor, perk) {
 }
 
 async function buyPerk(actor, perkNode) {
-  console.log("BUYING PERK!!!");
-
   // get the prerequisites
   const { value, canMeet } = getActorPrerequisites(actor, perkNode.perk);
   if (!value && !canMeet) {
@@ -199,7 +202,6 @@ async function buyPerk(actor, perkNode) {
     // assign skills
     if (canMeet.skills) {
       const skills = actor.system.toObject().skills;
-      console.log(skills);
       for (const [slug, delta] of Object.entries(canMeet.skills)) {
         const skill = skills.find(s=>s.slug === slug);
         if (!skill) continue;
@@ -274,13 +276,11 @@ async function PerkStore_initialize(actor) {
  * @param manager 
  */
 function PerkStore_updatePerkState(currentPerk, actor, manager) {
-  console.log("perkStore_updatePerkState", currentPerk?.name);
   const missingConnections = this.missingConnections.get(currentPerk.slug) ?? [];
   const set = new Set([...currentPerk.system.node.connected, ...missingConnections]);
 
   for(const connected of set) {
     const connectedPerk = manager.perks.get(connected);
-    console.log("perkStore_updatePerkState::connected.start:", connectedPerk?.name);
     if(!connectedPerk || connectedPerk.system.node.i === null || connectedPerk.system.node.j === null) continue;
     const isRootPerk = connectedPerk.system.node.type === 'root';
     
@@ -292,11 +292,9 @@ function PerkStore_updatePerkState(currentPerk, actor, manager) {
     //TODO: Implement proper prerequisite checking
     if(actorMeetsPrerequisites(actor, connectedPerk)) {
       connectedNode.state = PerkState.available;
-      console.log("perkStore_updatePerkState::connected.available:", connectedPerk?.name);
       continue;
     }
     connectedNode.state = PerkState.connected;
-    console.log("perkStore_updatePerkState::connected.connected:", connectedPerk?.name);
   }
 }
 
