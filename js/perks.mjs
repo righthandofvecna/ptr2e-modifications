@@ -75,8 +75,8 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
     { label: "Threaded", slug: "threaded" },
   ]) {
     if (prereq === `An ${label} Movement Allowance` || prereq === `A ${label} Movement Allowance`) {
-      const overlandAllowance = actor.system?.movement?.get(slug)?.value ?? 0;
-      if (overlandAllowance <= 0) returnVal.value = false;
+      const moveAllowance = actor.system?.movement[slug]?.value ?? 0;
+      if (moveAllowance <= 0) returnVal.value = false;
       return returnVal;
     }
   }
