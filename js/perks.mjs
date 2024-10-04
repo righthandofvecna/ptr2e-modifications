@@ -24,7 +24,8 @@ function deparenthesize(str) {
 
 const PrereqRegex = {
   trait: /^\[[^\[\]]*\]$/,
-  level: /^Level (?<level>[0-9]+)+$/i
+  level: /^Level (?<level>[0-9]+)+$/i,
+  xOf: /^(?<num>(ONE)|(TWO)|(THREE)|(FOUR)|(FIVE)|(SIX)|([0-9]+)) OF: (?<list>.*)$/i
 };
 
 const SkillsSlugs = {};
@@ -45,6 +46,40 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
     const skillMinimum = parseInt(skillMatch.groups.value);
     const skill = deparenthesize(skillMatch.groups.skill);
     const slug = SkillsSlugs[skill];
+    // check skill value
+    const actorSkillValue = actor.system.skills.get(slug)?.total ?? 0;
+    if (actorSkillValue < skillMinimum) {
+      returnVal.value = false;
+
+      // check if the character has enough skill points available
+      const actorSkill = actor.system.skills.get(slug);
+      // maximum point investiture
+      const actorSkillPoints = actor.system.advancement.rvs.available;
+      const neededIncrease = skillMinimum - actorSkillValue;
+      const maxIncrease = Math.min((actor.level === 1 ? 90 : 100) - (actorSkill?.rvs ?? 0), actorSkillPoints);
+
+      if (neededIncrease <= maxIncrease) {
+        returnVal.canMeet = {
+          skills: { [slug]: neededIncrease },
+        }
+      }
+    }
+    return returnVal;
+  }
+
+  const rampingSkillMatch = prereq.match(PrereqRegex.rampingSkill);
+  if (rampingSkillMatch) {
+    const skillLowerMinimum = parseInt(rampingSkillMatch.groups.value);
+    const skillRamping = parseInt(rampingSkillMatch.groups.ramping);
+    const skillRampPerk = rampingSkillMatch.groups?.perk ?? "";
+    const skill = deparenthesize(rampingSkillMatch.groups.skill);
+    const slug = SkillsSlugs[skill];
+
+    // check how many perks the actor has
+    const numPerks = skillRampPerk === "" ? 0 : actor.items.filter(i=>i.name?.includes(skillRampPerk)).length;
+
+    const skillMinimum = skillLowerMinimum + (skillRamping * numPerks);
+
     // check skill value
     const actorSkillValue = actor.system.skills.get(slug)?.total ?? 0;
     if (actorSkillValue < skillMinimum) {
@@ -104,10 +139,42 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
     return returnVal;
   }
 
+  const perkMatch = prereq.match(PrereqRegex.perk);
+  if (perkMatch) {
+    const hasPerk = actor.items.find(p=>p.type === "perk" && p.name === prereq);
+    if (!hasPerk) returnVal.value = false;
+    return returnVal;
+  }
+
+  const xOfMatch = prereq.match(PrereqRegex.xOf);
+  if (xOfMatch) {
+    const xOf = xOfMatch.groups.num;
+    const xOfNum = (()=>{
+      if (["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX"].includes(xOf.toUpperCase())) {
+        return ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX"].indexOf(xOf.toUpperCase()) + 1;
+      }
+      return parseInt(xOf);
+    })();
+    if (!isNaN(xOfNum)) {
+      const xOfPrereqs = xOfMatch.groups.list.split(",").map(p=>(p ?? "").trim()).filter(p=>!!p);
+      if (xOfPrereqs.length > xOfNum) {
+        const xOfMet = xOfPrereqs.map(subPrereq=>actorMeetsPrerequisite(actor, subPrereq, false))
+        returnVal.known = !xOfMet.some(p=>!p.known);
+        returnVal.value = xOfMet.filter(p=>p.value).length >= xOfNum;
+        return returnVal;
+      }
+    }
+    console.log("invalid xOf:", prereq);
+  }
+
   // TYPO-related
   if (prereq === "Underdog") {
     if (!actor.traits.find(t=>t.label == "Underdog")) returnVal.value = false;
     return returnVal;
+  }
+
+  if (prereq === "Running or Swim 35") {
+    return actorMeetsPrerequisite(actor, "Running 35 or Swim 35", orDefault);
   }
 
 
@@ -398,7 +465,7 @@ function autoTest() {
 
 
 
-function addPerkWebPrerequisiteParsing() {
+async function addPerkWebPrerequisiteParsing() {
   let allSkillsRe = Object.values(CONFIG.PTR.data.skills).map(s=>{
     if (!s.group) {
       const basicSkillName = game.i18n.localize(`PTR2E.Skills.${s.slug}.label`);
@@ -424,10 +491,24 @@ function addPerkWebPrerequisiteParsing() {
   allSkillsRe += "|(Riding)"
   SkillsSlugs["Riding"] = "ride";
 
+  allSkillsRe += "|(Science \\(Palaeontology\\))";
+  SkillsSlugs["Palaeontology"] = "paleontology";
 
+  allSkillsRe += "|(Science \\(Bontany\\))";
+  SkillsSlugs["Bontany"] = "botany";
 
-  console.log(allSkillsRe);
-  PrereqRegex.skill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+)$`)
+  PrereqRegex.skill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+)$`);
+  PrereqRegex.rampingSkill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+) \\+ (?<ramping>[0-9]+) ?x \\(# of (?<perk>.*) Perks already obtained\\)$`, "i");
+
+  let allPerksRe = (await Promise.all(game.packs.get("ptr2e.core-perks").index.map((ind)=>fromUuid(ind.uuid)))).filter(p=>{
+    return !!p;
+  }).map(p=>`(${p.name})`).reduce((acc, v)=>{
+    if (!acc) return v;
+    return acc + "|" + v;
+  }, "");
+
+  PrereqRegex.perk = new RegExp(`^(${allPerksRe})$`);
+
 
   console.log("prereq tests:", "Medicine 5", !!("Medicine 5".match(PrereqRegex.skill)));
   console.log("prereq tests:", "Husbandry 25", !!("Husbandry 25".match(PrereqRegex.skill)));
