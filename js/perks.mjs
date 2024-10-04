@@ -30,12 +30,38 @@ const PrereqRegex = {
 
 const SkillsSlugs = {};
 
+/**
+ * 
+ * @param {*} actor 
+ * @param {string} prereq 
+ * @param {boolean} orDefault 
+ * @returns 
+ */
 function actorMeetsPrerequisite(actor, prereq, orDefault) {
   const returnVal = {
     value: true,
     canMeet: null,
     known: true,
   };
+
+  // Remove completely enclosing parentheses
+  prereq = prereq.trim();
+  if (prereq.charAt(0) === "(" && prereq.charAt(prereq.length-1) === ")") {
+    let pn = 1;
+    let shouldRemove = true;
+    for (let idx = 1; idx < prereq.length - 1; idx++) {
+      if (prereq.charAt(idx) === "(") pn++;
+      if (prereq.charAt(idx) === ")") pn--;
+      if (pn === 0) {
+        shouldRemove = false;
+        break;
+      }
+    }
+    if (shouldRemove) {
+      prereq = prereq.substring(1, prereq.length - 1);
+    }
+  }
+  
 
   if (prereq === "None") {
     return returnVal;
@@ -179,16 +205,39 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
 
 
   // try to do ORs
-  const subPrereqs = prereq.split(/ or /i);
-  if (subPrereqs.length > 1) {
-    for (const subPrereq of subPrereqs) {
+  const orPrereqs = prereq.split(/ or /i);
+  if (orPrereqs.length > 1) {
+    returnVal.known = true;
+    for (const subPrereq of orPrereqs) {
       const { value: subValue, known: subKnown } = actorMeetsPrerequisite(actor, subPrereq, false);
-      if (!subValue) {
-        returnVal.value = subValue;
+      if (!subKnown) {
         returnVal.known = subKnown;
+      }
+      if (subValue) {
+        returnVal.value = subValue;
         return returnVal
       }
     }
+    return returnVal;
+  }
+
+
+  // try to do ANDs
+  const andPrereqs = prereq.split(/ and /i);
+  if (andPrereqs.length > 1) {
+    returnVal.value = true;
+    returnVal.known = true;
+    for (const subPrereq of andPrereqs) {
+      const { value: subValue, known: subKnown } = actorMeetsPrerequisite(actor, subPrereq, false);
+      if (!subKnown) {
+        returnVal.known = subKnown;
+      }
+      if (!subValue) {
+        returnVal.value = subValue;
+        return returnVal
+      }
+    }
+    return returnVal;
   }
   
   returnVal.value = orDefault;
