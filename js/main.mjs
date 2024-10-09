@@ -4,5 +4,12 @@ import * as actions from "./actions.mjs";
 
 Hooks.on("init", ()=>{
   perks.register();
-  actions.register();
 });
+
+Hooks.on("ready", ()=>{
+  try {
+    actions.register();
+  } catch (e) {
+    console.error(e);
+  }
+})
