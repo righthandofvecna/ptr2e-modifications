@@ -1,4 +1,6 @@
 
+import { MODULENAME } from "./utils.mjs";
+
 // copied from perk-node.ts
 const PerkState = {
   unavailable: 0,
@@ -578,7 +580,9 @@ async function addPerkWebPrerequisiteParsing() {
 
 
 export function register() {
-  const module = game.modules.get("ptr2e-modifications");
+  if (!(game.settings.get(MODULENAME, "perkPrerequisites") ?? true)) return;
+  
+  const module = game.modules.get(MODULENAME);
   module.api ??= {};
   module.api.actorMeetsPrerequisites = actorMeetsPrerequisites;
 

@@ -1,0 +1,77 @@
+.ptr2e-modifications .skill-list .depth-0 {
+  margin-left: 0;
+}
+.ptr2e-modifications .skill-list .depth-0.skill-group-label {
+  margin-left: calc(16px + 0.25rem);
+}
+.ptr2e-modifications .skill-list .depth-1 {
+  margin-left: calc(16px + 0.25rem);
+}
+.ptr2e-modifications .skill-list .depth-1.skill-group-label {
+  margin-left: calc(32px + 0.25rem);
+}
+.ptr2e-modifications .skill-list .depth-2 {
+  margin-left: calc(32px + 0.25rem);
+}
+.ptr2e-modifications .skill-list .depth-2.skill-group-label {
+  margin-left: calc(48px + 0.25rem);
+}
+.ptr2e-modifications .skill-list .depth-3 {
+  margin-left: calc(48px + 0.25rem);
+}
+.ptr2e-modifications .skill-list .depth-3.skill-group-label {
+  margin-left: calc(64px + 0.25rem);
+}
+.skill-sheet .ptr2e-modifications .skills div.skill,
+.skill-sheet .ptr2e-modifications .skills header.skill,
+.skill-sheet .ptr2e-modifications .skills div.skill-group,
+.skill-sheet .ptr2e-modifications .skills header.skill-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  text-align: center;
+}
+.skill-sheet .ptr2e-modifications .skills div.skill label,
+.skill-sheet .ptr2e-modifications .skills header.skill label,
+.skill-sheet .ptr2e-modifications .skills div.skill-group label,
+.skill-sheet .ptr2e-modifications .skills header.skill-group label,
+.skill-sheet .ptr2e-modifications .skills div.skill input,
+.skill-sheet .ptr2e-modifications .skills header.skill input,
+.skill-sheet .ptr2e-modifications .skills div.skill-group input,
+.skill-sheet .ptr2e-modifications .skills header.skill-group input,
+.skill-sheet .ptr2e-modifications .skills div.skill button,
+.skill-sheet .ptr2e-modifications .skills header.skill button,
+.skill-sheet .ptr2e-modifications .skills div.skill-group button,
+.skill-sheet .ptr2e-modifications .skills header.skill-group button {
+  flex: 0 0 22%;
+  text-align: center;
+}
+.skill-sheet .ptr2e-modifications .skills div.skill :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill :first-child,
+.skill-sheet .ptr2e-modifications .skills div.skill-group :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill-group :first-child {
+  text-align: left;
+  justify-self: left;
+  padding-left: 0.5em;
+  flex: 1 0;
+}
+.skill-sheet .ptr2e-modifications .skills div.skill.depth-1 :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill.depth-1 :first-child,
+.skill-sheet .ptr2e-modifications .skills div.skill-group.depth-1 :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill-group.depth-1 :first-child {
+  padding-left: 1.5em;
+}
+.skill-sheet .ptr2e-modifications .skills div.skill.depth-2 :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill.depth-2 :first-child,
+.skill-sheet .ptr2e-modifications .skills div.skill-group.depth-2 :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill-group.depth-2 :first-child {
+  padding-left: 2.5em;
+}
+.skill-sheet .ptr2e-modifications .skills div.skill.depth-3 :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill.depth-3 :first-child,
+.skill-sheet .ptr2e-modifications .skills div.skill-group.depth-3 :first-child,
+.skill-sheet .ptr2e-modifications .skills header.skill-group.depth-3 :first-child {
+  padding-left: 3.5em;
+}

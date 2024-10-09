@@ -1,4 +1,5 @@
 
+import { MODULENAME } from "./utils.mjs";
 
 
 export function register() {
@@ -10,7 +11,7 @@ export function register() {
     }
   })();
 
-  if (AttackPTR2e) {
+  if (AttackPTR2e && (game.settings.get(MODULENAME, "enableAutoStatusMoves") ?? true)) {
     Object.defineProperty(AttackPTR2e.prototype, "rollable", {
       get() {
         return true;

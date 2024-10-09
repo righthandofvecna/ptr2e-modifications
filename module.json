@@ -29,6 +29,9 @@
     "esmodules": [
         "/js/main.mjs"
     ],
+    "styles": [
+        "/css/applications.css"
+    ],
     "url": "",
     "manifest": "",
     "download": ""
