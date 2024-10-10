@@ -11,7 +11,9 @@ export function register() {
     }
   })();
 
-  if (AttackPTR2e && (game.settings.get(MODULENAME, "enableAutoStatusMoves") ?? true)) {
+  if (!(game.settings.get(MODULENAME, "enableAutoStatusMoves") ?? true)) return;
+
+  if (AttackPTR2e) {
     Object.defineProperty(AttackPTR2e.prototype, "rollable", {
       get() {
         return true;
