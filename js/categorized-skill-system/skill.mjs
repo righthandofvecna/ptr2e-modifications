@@ -98,3 +98,21 @@ export const BaseSkills = {
   teaching: { slug: "teaching", group: "social-group" },
   track: { slug: "track", group: "wilderness-group" },
 }
+
+export const BaseSkillGroups = {
+  "arts-group": { slug: "arts-group", points: 20 },
+  "athletics-group": { slug: "athletics-group", points: 20 },
+  "social-group": { slug: "social-group", points: 20 },
+  "practical-group": { slug: "practical-group", points: 20 },
+  "wilderness-group": { slug: "wilderness-group", points: 20 },
+  "technology-group": { slug: "technology-group", points: 20 },
+  "occult-group": { slug: "occult-group", points: 20 },
+  "performance-group": { slug: "performance-group", points: 20 },
+  "pilot-group": { slug: "pilot-group", points: 20 },
+  "cars-group": { slug: "cars-group", parentGroup: "pilot-group", points: 20 },
+  "aircraft-group": { slug: "aircraft-group", parentGroup: "pilot-group", points: 20 },
+  "science-group": { slug: "science-group", points: 20 },
+  "biology-group": { slug: "biology-group", parentGroup: "science-group", points: 20 },
+  "chemistry-group": { slug: "chemistry-group", parentGroup: "science-group", points: 20 },
+  "mathematics-group": { slug: "mathematics-group", parentGroup: "science-group", points: 20 },
+};

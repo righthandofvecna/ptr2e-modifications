@@ -1,5 +1,6 @@
 
 import { MODULENAME } from "./utils.mjs";
+import { PTR2eSkillGroups } from "./categorized-skill-system/skill-groups-collection.mjs";
 
 // copied from perk-node.ts
 const PerkState = {
@@ -319,13 +320,40 @@ async function buyPerk(actor, perkNode) {
 
     // assign skills
     if (canMeet.skills) {
+      const useCategorizedSkills = game.settings.get(MODULENAME, "categorizedSkills") ?? true;
       const skills = actor.system.toObject().skills;
+      const skillGroups = actor.flags?.[MODULENAME]?.skillGroups ?? PTR2eSkillGroups.skillGroups();
       for (const [slug, delta] of Object.entries(canMeet.skills)) {
         const skill = skills.find(s=>s.slug === slug);
         if (!skill) continue;
-        skill.rvs += delta;
+
+        if (!useCategorizedSkills) {
+          skill.rvs += delta;
+          continue;
+        }
+        // categorized skill updates
+        let currentDelta = delta;
+        for (const group of game.ptr.data.skillGroups.groupChainFromSkill(skill).map(g=>skillGroups[g.slug]).reverse()) {
+          const left = (group.points ?? 0) - (group.rvs ?? 0);
+          if (left <= 0) continue;
+          if (currentDelta > left) {
+            currentDelta -= left;
+            group.rvs = group.points;
+            continue;
+          }
+          group.rvs += currentDelta;
+          currentDelta = 0;
+          break;
+        }
+        if (currentDelta > 0) {
+          skill.rvs += delta;
+          continue;
+        }
       }
       actorUpdates["system.skills"] = skills;
+      if (useCategorizedSkills) {
+        actorUpdates[`flags.${MODULENAME}.skillGroups`] = skillGroups;
+      }
     }
     await actor.update(actorUpdates);
   }
@@ -508,16 +536,8 @@ async function PerkWebHUD_actions_purchase() {
   await buyPerk(actor, node);
 }
 
-
-function autoTest() {
-
-}
-
-
-
-
 async function addPerkWebPrerequisiteParsing() {
-  let allSkillsRe = Object.values(CONFIG.PTR.data.skills).map(s=>{
+  let allSkillsRe = Object.values(CONFIG.PTR.data.originalSkills ?? CONFIG.PTR.data.skills).map(s=>{
     if (!s.group) {
       const basicSkillName = game.i18n.localize(`PTR2E.Skills.${s.slug}.label`);
       SkillsSlugs[basicSkillName] = s.slug;
@@ -560,13 +580,6 @@ async function addPerkWebPrerequisiteParsing() {
 
   PrereqRegex.perk = new RegExp(`^(${allPerksRe})$`);
 
-
-  console.log("prereq tests:", "Medicine 5", !!("Medicine 5".match(PrereqRegex.skill)));
-  console.log("prereq tests:", "Husbandry 25", !!("Husbandry 25".match(PrereqRegex.skill)));
-
-  autoTest();
-
-
   const PerkStore = game.ptr.web.collection;
   // PerkStore.initialize = PerkStore_initialize.bind(PerkStore); // remove when #599 merges
   PerkStore.updatePerkState = PerkStore_updatePerkState.bind(PerkStore);
@@ -585,6 +598,7 @@ export function register() {
   const module = game.modules.get(MODULENAME);
   module.api ??= {};
   module.api.actorMeetsPrerequisites = actorMeetsPrerequisites;
+  module.api.PrereqRegex = PrereqRegex;
 
   Hooks.on("ready",()=>{
     addPerkWebPrerequisiteParsing();
