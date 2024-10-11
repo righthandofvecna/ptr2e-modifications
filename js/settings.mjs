@@ -7,6 +7,7 @@ export function register() {
 		default: true,
 		type: Boolean,
 		scope: "world",
+		requiresReload: true,
 		config: true,
 		hint: "Enable basic automated perk prerequisite checking"
 	});
@@ -16,6 +17,7 @@ export function register() {
 		default: true,
 		type: Boolean,
 		scope: "world",
+		requiresReload: true,
 		config: true,
 		hint: `Allow users to roll status moves, as well as attacks. WARNING: Enabling this may entail "any amount of unforeseen consequences", including and limited to: a slightly wonky chat message. ${String.fromCodePoint(0x1F631)}`
 	});
@@ -25,6 +27,7 @@ export function register() {
 		default: true,
 		type: Boolean,
 		scope: "world",
+		requiresReload: true,
 		config: true,
 		hint: "Enable using categorized nested skills"
 	});
