@@ -85,7 +85,7 @@ export function register() {
 
   game.settings.register(MODULENAME, "categorizedSkills", {
 		name: "Categorized Nested Skills",
-		default: true,
+		default: false,
 		type: Boolean,
 		scope: "world",
 		requiresReload: true,
