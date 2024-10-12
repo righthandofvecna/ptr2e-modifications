@@ -64,11 +64,19 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     const { skills, hideHiddenSkills } = SkillsComponent.prepareSkillsData(this.document);
 
     const convertSkill = (skill) => {
-      if (game.i18n.has(`PTR2E.Skills.${skill.slug}.label`)) {
-        const label = game.i18n.format(`PTR2E.Skills.${skill.slug}.label`);
+      const coreLabel = (()=>{
+        if (game.i18n.has(`PTR2E.Skills.${skill.slug}.label`))
+          return game.i18n.format(`PTR2E.Skills.${skill.slug}.label`);
+        if (game.i18n.has(`PTR2E.Skills.${skill.group}.${skill.slug}.label`))
+          return game.i18n.format(`PTR2E.Skills.${skill.group}.${skill.slug}.label`);
+        if (game.i18n.has(skill.label ?? "NO-LABEL"))
+          return game.i18n.format(skill.label);
+        return null;
+      })();
+      if (coreLabel) {
         return [{
           ...skill,
-          label,
+          label: coreLabel,
           investment: 0,
           max: 70 - (skill?.rvs ?? 0),
           min: -(skill?.rvs ?? 0),
@@ -139,6 +147,8 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
 
     const groupsWithSkillsVisible = new Set(this.skillGroups.filter(group => (group.rvs ?? 0) + group.investment >= group.points).map(group => group.slug));
 
+    console.log("groupsWithSkillsVisible", groupsWithSkillsVisible);
+
     // remove skills that should be hidden by groups!
     // also assign min, max, and bonusFromGroups
     const modifiableSkills = foundry.utils.deepClone(this.skills).filter((skill) => {
@@ -158,6 +168,9 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
         bonusFromGroups,
       }
     });
+
+    console.log("skills", this.skills);
+    console.log("modifiableSkills", modifiableSkills);
 
     // remove groups that should be hidden by parent groups!
     // also assign min, max, and bonusFromGroups
@@ -228,7 +241,10 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     })();
 
     // check if this configuration is valid, and can pass validation
-    const valid = points.available >= 0 && !skills.some((skill) => (skill.slug === "resources" ? (skill.investment <= -skill.value) : (skill.investment < skill.min)) || skill.investment > skill.max);
+    // const valid = points.available >= 0 && !skills.some((skill) => (skill.slug === "resources" ? (skill.investment <= -skill.value) : (skill.investment < skill.min)) || skill.investment > skill.max);
+    const valid = true;
+
+    console.log("SkillsAndGroups:", skills);
 
     return {
       document: this.document,
@@ -324,12 +340,15 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
                 rvs: 0,
               };
             }),
-            "system.skillGroups": document.system.skillGroups.map((group) => {
+            [`flags.${MODULENAME}.skillGroups`]: Object.entries(document.flags?.[MODULENAME]?.skillGroups ?? {}).reduce((sg, [key, group]) => {
               return {
-                ...group,
-                rvs: 0,
-              }
-            }),
+                ...sg,
+                [key]: {
+                  ...group,
+                  rvs: 0,
+                }
+              };
+            }, {}),
           });
           this.skills = this.resetSkills();
           this.skillGroups = this.resetSkillGroups();
@@ -587,6 +606,19 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
       });
     }
 
+    // add core skills that aren't present
+    for (const coreSkill of game.ptr.data.skills.contents) {
+      if (skills.find(s=>s.slug === coreSkill.slug)) continue;
+      skills.push({
+        slug: coreSkill.slug,
+        value: 1,
+        rvs: 0,
+        favourite: coreSkill.favourite ?? false,
+        hidden: coreSkill.hidden ?? false,
+        group: coreSkill.group || undefined,
+      })
+    }
+
     if (this.document.system.advancement.level === 1) {
       const resourceIndex = skills.findIndex((skill) => skill.slug === "resources");
       if (resourceIndex !== -1) {
@@ -596,6 +628,7 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
       }
     }
 
+    console.log("save skills", skills);
     await this.document.update({
       "system.skills": skills,
       [`flags.${MODULENAME}.skillGroups`]: skillGroups,

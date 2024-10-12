@@ -1,0 +1,66 @@
+{
+    "PTR2E": {
+        "Skills": {
+            "arts-group": {
+                "label": "Arts",
+                "hint": "This is a collection of undefined skills for the most part, though some examples might exist such as Painting or Flower Arrangement. This skill is a measure of talent for creative pursuits and is left to the player to define the bounds of their art."
+            },
+            "athletics-group": {
+                "label": "Athletics",
+                "hint": "The Athletics group contains skills that require physical conditioning for."
+            },
+            "social-group": {
+                "label": "Social",
+                "hint": "The Social group contains skills that help with interacting with people."
+            },
+            "practical-group": {
+                "label": "Practical",
+                "hint": "The Practical group contains practical life skills one might learn at home."
+            },
+            "wilderness-group": {
+                "label": "Wilderness",
+                "hint": "The Wilderness group contains skills learned from braving the wilds of the world."
+            },
+            "technology-group": {
+                "label": "Technology",
+                "hint": "The Technology group contains skills that are related to using, making, and understanding technology."
+            },
+            "occult-group": {
+                "label": "Occult",
+                "hint": "The Occult skills are actually several skills under one group, purchased separately. These are Psychic, Ghost, Dragon, Fairy, Spiritual, Legendary, Paradox. The skills cover knowledge about the topics they’re named for. GMs may wish to add more Occult knowledge as appropriate for their campaign setting."
+            },
+            "performance-group": {
+                "label": "Performance",
+                "hint": "Performance comes in Cool, Clever, Cute, Beauty and Tough variations and these are the primary skills used for Pokemon Contests, but that doesn’t need to be their only applications. We encourage you to let your creativity thrive with these."
+            },
+            "pilot-group": {
+                "label": "Pilot",
+                "hint": "This group of skills, purchased separately, measure a character’s ability to pilot a vehicle. The example Piloting skills we have included here are Bike, Small Motor Vehicles, Cars, Utility Vehicles, Military Ground Vehicles, Walkers, Aircraft, Aerospace Vehicles, Exotic Vehicle (Specific), Watercraft. You may wish to add or remove from this list as appropriate for your campaign setting (such as carriages in a fantasy setting.)"
+            },
+            "cars-group": {
+                "label": "Cars",
+                "hint": "This skill is used to pilot cars and similar vehicles."
+            },
+            "aircraft-group": {
+                "label": "Aircraft",
+                "hint": "This skill group is used to pilot aircraft and similar vehicles."
+            },
+            "science-group": {
+                "label": "Science",
+                "hint": "The Science group skill covers a number of fields, purchased separately. Examples include Astronomy, Biology, Botany, Chemistry, Cryptography, Forensics, Geology, Mathematics, Meteorology, Parapsychology, Pharmacy, Physics, Zoology. Pokémon-specific fields include Megalobiology, Terastology, Ultrology, Paradoxian Studies. The GM may add to or remove from this list as appropriate to their campaign. This skill represents specialized knowledge in a field and will generally rely upon either specific perks, or a situational application that the GM or Player must call for."
+            },
+            "biology-group": {
+                "label": "Biology",
+                "hint": "This skill group involves the study of living organisms."
+            },
+            "chemistry-group": {
+                "label": "Chemistry",
+                "hint": "This skill group involves the study of chemicals and their interactions."
+            },
+            "mathematics-group": {
+                "label": "Mathematics",
+                "hint": "This skill group is used to study numbers, equations, and related items."
+            }
+        }
+    }
+}

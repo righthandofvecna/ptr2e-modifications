@@ -30,6 +30,7 @@ class SkillsComponent /*extends ActorComponent*/ {
       const coreSkill = CONFIG.PTR.data.skills[skill?.slug];
       if (coreSkill) {
         skill.group = coreSkill.group;
+        skill.label = coreSkill.label;
       }
     }
 

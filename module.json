@@ -32,6 +32,13 @@
     "styles": [
         "/css/applications.css"
     ],
+    "languages": [
+      {
+        "lang": "en",
+        "name": "English",
+        "path": "lang/en.json"
+      }
+    ],
     "url": "",
     "manifest": "",
     "download": ""

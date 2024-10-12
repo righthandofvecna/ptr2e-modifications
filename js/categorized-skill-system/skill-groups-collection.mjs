@@ -14,7 +14,7 @@ export class PTR2eSkillGroups extends Collection {
     }
 
     static skillGroups() {
-      return CONFIG.PTR.data.skillGroups.contents.reduce((o,c)=>{
+      return Object.entries(CONFIG.PTR.data.skillGroups).reduce((o,c)=>{
         return {...o, [c.slug]: 
           {
             ...c,
