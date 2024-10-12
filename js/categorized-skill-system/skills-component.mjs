@@ -34,6 +34,13 @@ class SkillsComponent /*extends ActorComponent*/ {
       }
     }
 
+    static updateSkillGroupWithChange(skillGroup) {
+        const coreSkillGroup = CONFIG.PTR.data.skillGroups[skillGroup?.slug];
+        if (coreSkillGroup) {
+            skillGroup.points = coreSkillGroup.points;
+        }
+    }
+
     static prepareSkillsData(actor) {
         const skills = (() => {
             const favouriteGroups = { none: { label: null, slug: null, skills: [], subcategories: [], skillsAndGroups: [] } };

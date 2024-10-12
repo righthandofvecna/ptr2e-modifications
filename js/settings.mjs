@@ -92,4 +92,16 @@ export function register() {
 		config: true,
 		hint: "Enable using categorized nested skills"
 	});
+
+	if (game.settings.get(MODULENAME, "categorizedSkills")) {
+		game.settings.register(MODULENAME, "maxGroupInvestment", {
+			name: "Max Group Investment",
+			default: 20,
+			type: new foundry.data.fields.NumberField({nullable: false, min: 0, step: 1, default: 20}),
+			scope: "world",
+			requiresReload: true,
+			config: true,
+			hint: "The maximum points you can put in a group"
+		});
+	}
 }

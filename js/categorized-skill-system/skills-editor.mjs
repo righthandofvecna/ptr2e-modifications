@@ -58,6 +58,7 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     this.document = document;
     this.skills = this.resetSkills();
     this.skillGroups = this.resetSkillGroups();
+    this.debouncedRender = foundry.utils.debounce(this.render, 200)
   }
 
   resetSkills() {
@@ -143,11 +144,10 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     };
     points.available = points.total - points.spent;
     const levelOne = this.document.system.advancement.level === 1;
-    const maxTotalInvestment = levelOne ? 90 : 100;
+    const isAce = this.document.traits.has("ace");
+    const maxTotalInvestment = 70;
 
     const groupsWithSkillsVisible = new Set(this.skillGroups.filter(group => (group.rvs ?? 0) + group.investment >= group.points).map(group => group.slug));
-
-    console.log("groupsWithSkillsVisible", groupsWithSkillsVisible);
 
     // remove skills that should be hidden by groups!
     // also assign min, max, and bonusFromGroups
@@ -168,9 +168,6 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
         bonusFromGroups,
       }
     });
-
-    console.log("skills", this.skills);
-    console.log("modifiableSkills", modifiableSkills);
 
     // remove groups that should be hidden by parent groups!
     // also assign min, max, and bonusFromGroups
@@ -244,10 +241,10 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     // const valid = points.available >= 0 && !skills.some((skill) => (skill.slug === "resources" ? (skill.investment <= -skill.value) : (skill.investment < skill.min)) || skill.investment > skill.max);
     const valid = true;
 
-    console.log("SkillsAndGroups:", skills);
 
     return {
       document: this.document,
+      isAce,
       luck,
       resources,
       skills,
@@ -297,7 +294,7 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     if (!skill) return;
 
     skill.investment = value;
-    this.render({});
+    this.debouncedRender({});
   }
 
   #onSkillGroupChange(event) {
@@ -311,7 +308,7 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
     if (!group) return;
 
     group.investment = value;
-    this.render({});
+    this.debouncedRender({});
   }
 
   static #onResetSkills(skilleditor) {

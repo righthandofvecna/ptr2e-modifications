@@ -3,8 +3,10 @@
         <legend>Controls</legend>
         <div class="buttons">
             <button type="button" data-action="reset-skills">Reset All Investment</button>
+            {{#if isAce}}
             <button type="button" data-action="change-resources">Change Resources</button>
             <button type="button" data-action="change-luck">Change Luck</button>
+            {{/if}}
         </div>
         <div class="points">
             <label>Spent Points: <span>{{points.spent}} / {{points.total}}</span></label>
@@ -19,6 +21,7 @@
                 <label>Current Investment</label>
                 <label>Apply Investment</label>
             </header>
+            {{#if isAce}}
             {{!-- Luck --}}
             <div class="skill">
                 <label class="skill" data-tooltip-direction="LEFT" data-slug="{{luck.slug}}" data-group="{{luck.group}}" data-tooltip="{{luck.slug}}">{{luck.label}}</label>
@@ -37,6 +40,7 @@
                     <input name="{{resources.slug}}.investment" type="number" min="{{resources.min}}" max="{{resources.max}}" value="{{resources.investment}}" data-slug="{{resources.slug}}" step="1"/>
                 {{/if}}
             </div>
+            {{/if}}
             {{#each skills}}
                 {{> skillOrGroup}}
             {{/each}}
@@ -65,7 +69,7 @@
         {{#if (and (eq this.slug "resources") (not @root.levelOne true))}}
             <label></label>
         {{else}}
-            <input name="{{slug}}.investment" type="number" min="{{minInvestment}}" max="{{maxInvestment}}" value="{{investment}}" data-slug="{{slug}}" step="1"/>
+            <input name="{{slug}}.investment" type="number" min="{{min}}" max="{{max}}" value="{{investment}}" data-slug="{{slug}}" step="1"/>
         {{/if}}
     {{/if}}
 </div>

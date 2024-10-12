@@ -27,6 +27,14 @@ export function register() {
   CONFIG.PTR.data.skills = BaseSkills;
   CONFIG.PTR.data.skillGroups = BaseSkillGroups;
 
+  // update base skill group costs
+  const maxGroupInvestment = game.settings.get(MODULENAME, "categorizedSkills") ? game.settings.get(MODULENAME, "maxGroupInvestment") : 20;
+  if (maxGroupInvestment != 20) {
+    for (const sg of Object.values(BaseSkillGroups)) {
+      sg.points = maxGroupInvestment;
+    }
+  }
+
   game.ptr.data.skillGroups = PTR2eSkillGroups.create();
   game.ptr.data.skills.refresh();
 
@@ -37,9 +45,13 @@ export function register() {
 
   // ActorSheetPTRV2.PARTS.skills.template = SkillsComponent.TEMPLATE;
   ActorSheetPTRV2.prototype._prepareContext = ActorSheetPTRV2_prepareContext(ActorSheetPTRV2.prototype._prepareContext);
+
+  Handlebars.unregisterPartial("actor-skills-component");
+  loadTemplates(["modules/ptr2e-modifications/templates/actor-skills-component.hbs"]).then(()=>{
+    Handlebars.registerPartial("actor-skills-component", `{{> modules/ptr2e-modifications/templates/actor-skills-component.hbs}}`);
+  })
 }
 
 // TODO: tooltips
-// TODO: alignment on skill edit page
 // TODO: override validation on skills-editor
 // TODO: skills display on character sheet

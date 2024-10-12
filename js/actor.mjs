@@ -24,6 +24,9 @@ function prepareBaseData(wrapper) {
   if ((game.settings.get(MODULENAME, "categorizedSkills") ?? true)) {
     // add inherited value of skills
     const skillGroups = this.parent.getFlag(MODULENAME, "skillGroups") ?? PTR2eSkillGroups.skillGroups();
+    for (const skillGroup of Object.values(skillGroups)) {
+      SkillsComponent.updateSkillGroupWithChange(skillGroup);
+    }
     for (const skill of this.skills) {
       SkillsComponent.updateSkillWithChange(skill);
       skill.bonusFromGroups = 0;

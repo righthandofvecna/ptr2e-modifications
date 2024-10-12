@@ -1,26 +1,26 @@
 
 
-.ptr2e-modifications {
-    .skill-list {
-        .depth-0 {
+.application.sheet.actor.v2 .window-content .tab.active[data-tab=skills] .skill-component.ptr2e-modifications {
+    .skill-list .skill {
+        &.depth-0 {
             margin-left: 0;
             &.skill-group-label {
                 margin-left: calc(16px + 0.25rem);
             }
         }
-        .depth-1 {
+        &.depth-1 {
             margin-left: calc(16px + 0.25rem);
             &.skill-group-label {
                 margin-left: calc(32px + 0.25rem);
             }
         }
-        .depth-2 {
+        &.depth-2 {
             margin-left: calc(32px + 0.25rem);
             &.skill-group-label {
                 margin-left: calc(48px + 0.25rem);
             }
         }
-        .depth-3 {
+        &.depth-3 {
             margin-left: calc(48px + 0.25rem);
             &.skill-group-label {
                 margin-left: calc(64px + 0.25rem);
@@ -29,7 +29,7 @@
     }
 }
 
-.skill-sheet .ptr2e-modifications {
+.application.sheet.skill-sheet .ptr2e-modifications {
     .skills {
         div.skill, header.skill,
         div.skill-group, header.skill-group {
@@ -48,6 +48,9 @@
                 justify-self: left;
                 padding-left: 0.5em;
                 flex: 1 0;
+            }
+            &.depth-0 :first-child {
+                padding-left: unset;
             }
             &.depth-1 :first-child {
                 padding-left: 1.5em;
