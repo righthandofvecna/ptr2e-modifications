@@ -39,3 +39,7 @@ export function register() {
   ActorSheetPTRV2.prototype._prepareContext = ActorSheetPTRV2_prepareContext(ActorSheetPTRV2.prototype._prepareContext);
 }
 
+// TODO: tooltips
+// TODO: alignment on skill edit page
+// TODO: override validation on skills-editor
+// TODO: skills display on character sheet
