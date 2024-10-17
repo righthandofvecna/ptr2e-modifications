@@ -9,10 +9,10 @@
             "url": ""
         }
     ],
-    "version": "0.1.0",
+    "version": "0.1.1",
     "compatibility": {
-        "minimum": "12",
-        "verified": "12"
+        "minimum": "12.327",
+        "verified": "12.329"
     },
     "relationships": {
         "systems": [
@@ -21,7 +21,7 @@
                 "type": "system",
                 "manifest": "https://2e.ptr.wiki/foundry/download?repo=ptr2e&type=json",
                 "compatibility": {
-                    "verified": "0.10.0-alpha.2.2.1"
+                    "verified": "0.10.0-alpha.2.4.3"
                 }
             }
         ]
