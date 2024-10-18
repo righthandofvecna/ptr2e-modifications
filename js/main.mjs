@@ -3,6 +3,7 @@ import * as actor from "./actor.mjs";
 import * as perks from "./perks.mjs";
 import * as actions from "./actions.mjs";
 import * as exp from "./exp.mjs";
+import * as tokenDrop from "./token-drop.mjs";
 import * as skills from "./categorized-skill-system/index.mjs";
 
 
@@ -23,6 +24,12 @@ Hooks.on("init", ()=>{
     exp.register();
   } catch (e) {
     console.error("exp.register():", e);
+  }
+
+  try {
+    tokenDrop.register();
+  } catch (e) {
+    console.error("tokenDrop.register():", e);
   }
 
   try {
