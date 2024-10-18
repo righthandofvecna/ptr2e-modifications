@@ -2,7 +2,6 @@
 import { MODULENAME, early_isGM } from "./utils.mjs";
 
 function OnCreateToken(token) {
-  console.log("OnCreateToken", token);
   const scene = token?.scene;
   if (!scene) return;
   const combat = game.combats.find(c=>c.scene === scene);
