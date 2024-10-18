@@ -307,6 +307,8 @@ function actorMeetsPrerequisites(actor, perk) {
   return value;
 }
 
+
+
 async function buyPerk(actor, perkNode) {
   // get the prerequisites
   const { value, canMeet } = getActorPrerequisites(actor, perkNode.perk);
@@ -320,9 +322,9 @@ async function buyPerk(actor, perkNode) {
 
     // assign skills
     if (canMeet.skills) {
-      const useCategorizedSkills = game.settings.get(MODULENAME, "categorizedSkills") ?? true;
+      const useCategorizedSkills = game.settings.get(MODULENAME, "categorizedSkills") ?? false;
       const skills = actor.system.toObject().skills;
-      const skillGroups = actor.flags?.[MODULENAME]?.skillGroups ?? PTR2eSkillGroups.skillGroups();
+      const skillGroups = useCategorizedSkills ? actor.flags?.[MODULENAME]?.skillGroups ?? PTR2eSkillGroups.skillGroups() : {};
       for (const [slug, delta] of Object.entries(canMeet.skills)) {
         const skill = skills.find(s=>s.slug === slug);
         if (!skill) continue;
