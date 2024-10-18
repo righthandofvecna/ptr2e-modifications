@@ -2,6 +2,7 @@ import * as settings from "./settings.mjs";
 import * as actor from "./actor.mjs";
 import * as perks from "./perks.mjs";
 import * as actions from "./actions.mjs";
+import * as exp from "./exp.mjs";
 import * as skills from "./categorized-skill-system/index.mjs";
 
 
@@ -16,6 +17,12 @@ Hooks.on("init", ()=>{
     perks.register();
   } catch (e) {
     console.error("perks.register():", e);
+  }
+
+  try {
+    exp.register();
+  } catch (e) {
+    console.error("exp.register():", e);
   }
 
   try {

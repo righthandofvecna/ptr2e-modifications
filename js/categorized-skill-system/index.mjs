@@ -21,7 +21,7 @@ function ActorSheetPTRV2_prepareContext(original) {
 
 
 export function register() {
-  if (!(game.settings.get(MODULENAME, "categorizedSkills") ?? true)) return;
+  if (!(game.settings.get(MODULENAME, "categorizedSkills") ?? false)) return;
 
   CONFIG.PTR.data.originalSkills = foundry.utils.deepClone(CONFIG.PTR.data.skills);
   CONFIG.PTR.data.skills = BaseSkills;

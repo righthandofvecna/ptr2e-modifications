@@ -1,0 +1,48 @@
+<section class="xp-popup">
+    {{!-- Party Leaders --}}
+    <fieldset class="party-apply">
+    {{#each party}}
+        <img class="icon" src="{{img}}" data-tooltip-direction="DOWN" data-tooltip="{{name}}" />
+    {{/each}}
+    </fieldset>
+
+    <fieldset class="prospective-circumstance-modifiers">
+        <legend>Circumstance Modifiers</legend>
+        {{#each cm}}
+        <label class="w-100">{{label}}</label>
+        {{/each}}
+        <div class="form-group w-100">
+            <details class="custom">
+                <summary>Custom</summary>
+                <ul>
+                    <li>
+                        <div class="form-fields">
+                            <input class="newCircumstanceName" id="{{id}}-newCircumstanceName" type="text" name="newCircumstanceName" />
+                            <input class="newCircumstanceAmount" id="{{id}}-newCircumstanceAmount" type="number" name="newCircumstanceAmount" value="0" />
+                            {{!-- TODO: add button --}}
+                        </div>
+                    </li>
+                </ul>
+            </details>
+            {{!-- TODO iterate --}}
+        </div>
+    </fieldset>
+
+    <fieldset class="applied-circumstance-modifiers">
+        <legend>Applied Modifiers ({{modifier}})</legend>
+        {{#each cm as | label | }}
+        <label class="w-100">{{label}}</label>
+        {{/each}}
+    </fieldset>
+
+    <fieldset class="xp">
+        <legend>XP Award</legend>
+        <label class="xp-ber form-fields w-100">{{localize "PTR2E.XP.BER.label" amount=ber}}</label>
+        <label class="xp-cm form-fields w-100">{{localize "PTR2E.XP.Circumstance.Total.label" amount=modifier}}</label>
+        <label class="xp-total form-fields w-100">{{localize "PTR2E.XP.Total.label" amount=total}}</label>
+    </fieldset>
+
+    <footer class="controls">
+        <button type="submit">Submit</button>
+    </footer>
+</section>

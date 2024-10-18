@@ -1,5 +1,14 @@
 {
     "PTR2E": {
+        "XP": {
+            "title": "XP Award",
+            "Circumstance.New": {
+                "label": "New Circumstance"
+            },
+            "BER.label": "BER: {amount}",
+            "Circumstance.Total.label": "Total CM: {amount}",
+            "Total.label": "Total XP: {amount}"
+        },
         "Skills": {
             "arts-group": {
                 "label": "Arts",
