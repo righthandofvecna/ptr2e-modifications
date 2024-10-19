@@ -327,6 +327,8 @@ function OnRenderSidebarTab() {
 
 
 export function register() {
+  if (typeof CONFIG.PTR?.Applications?.ExpApp !== "undefined") return;
+  
   const module = game.modules.get(MODULENAME);
   module.api ??= {};
   module.api.ExpApp = ExpApp;
