@@ -1,6 +1,7 @@
 <section class="xp-popup">
     {{!-- Party Leaders --}}
     <fieldset class="party-apply">
+        <legend>Applies to</legend>
     {{#each party}}
         <img class="icon" src="{{img}}" data-tooltip-direction="DOWN" data-tooltip="{{name}}" />
     {{/each}}
@@ -8,38 +9,60 @@
 
     <fieldset class="prospective-circumstance-modifiers">
         <legend>Circumstance Modifiers</legend>
-        {{#each cm}}
-        <label class="w-100">{{label}}</label>
+        <details class="Custom form-group w-100" data-group="Custom">
+            <summary>Custom</summary>
+            <ul>
+                <li class="cm form-group">
+                    <div class="form-fields">
+                        <input class="customCircumstanceLabel label" id="{{id}}-customCircumstanceLabel" type="text" name="customCircumstanceLabel" placeholder="Custom Circumstance" />
+                        <input class="customCircumstanceBonus bonus" id="{{id}}-customCircumstanceBonus" type="number" name="customCircumstanceBonus" value="30" />
+                        <button type="button" class="add addCustomCircumstance">+</button>
+                    </div>
+                </li>
+            </ul>
+        </details>
+        {{!-- TODO iterate --}}
+        {{#each exampleCircumstanceModifiers as | group label |}}
+        <details class="{{label}} form-group w-100" data-group={{label}}"">
+            <summary>{{label}}</summary>
+            <ul>
+                {{#each group as |mod|}}
+                <li class="cm" {{#if mod.hint}}data-tooltip="{{mod.hint}}" data-tooltip-direction="RIGHT"{{/if}}>
+                    <span class="label">{{mod.label}}</span>
+                    <span class="bonus">{{mod.bonus}}</span>
+                    <button type="button" class="add" data-modifier-key="{{mod.key}}">+</button>
+                </li>
+                {{/each}}
+            </ul>
+        </details>
         {{/each}}
-        <div class="form-group w-100">
-            <details class="custom">
-                <summary>Custom</summary>
-                <ul>
-                    <li>
-                        <div class="form-fields">
-                            <input class="newCircumstanceName" id="{{id}}-newCircumstanceName" type="text" name="newCircumstanceName" />
-                            <input class="newCircumstanceAmount" id="{{id}}-newCircumstanceAmount" type="number" name="newCircumstanceAmount" value="0" />
-                            {{!-- TODO: add button --}}
-                        </div>
-                    </li>
-                </ul>
-            </details>
-            {{!-- TODO iterate --}}
-        </div>
     </fieldset>
 
     <fieldset class="applied-circumstance-modifiers">
-        <legend>Applied Modifiers ({{modifier}})</legend>
-        {{#each cm as | label | }}
-        <label class="w-100">{{label}}</label>
+        <legend>Applied Modifiers ({{modifierLabel}})</legend>
+        {{#each cm as |mod idx|}}
+        <div class="cm">
+            <span class="label">{{mod.label}}</span>
+            <span class="bonus">{{mod.bonus}}</span>
+            <button type="button" class="remove" data-modifier-idx="{{idx}}">-</button>
+        </div>
         {{/each}}
     </fieldset>
 
     <fieldset class="xp">
         <legend>XP Award</legend>
-        <label class="xp-ber form-fields w-100">{{localize "PTR2E.XP.BER.label" amount=ber}}</label>
-        <label class="xp-cm form-fields w-100">{{localize "PTR2E.XP.Circumstance.Total.label" amount=modifier}}</label>
-        <label class="xp-total form-fields w-100">{{localize "PTR2E.XP.Total.label" amount=total}}</label>
+        <div class="xp-ber form-group w-100">
+            <label>{{localize "PTR2E.XP.BER.label"}}</label>
+            <div class="form-fields">
+                <input type="number" name="ber" value="{{ber}}" disabled="disabled" />
+            </div>
+        </div>
+        <div class="xp-cm form-group w-100">
+            <label>{{localize "PTR2E.XP.Circumstance.Total.label"}}</label>
+            <div class="form-fields">
+                <input type="number" name="modifier" value="{{modifier}}" disabled="disabled" />
+            </div>
+        </div>
     </fieldset>
 
     <footer class="controls">

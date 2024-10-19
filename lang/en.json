@@ -5,9 +5,8 @@
             "Circumstance.New": {
                 "label": "New Circumstance"
             },
-            "BER.label": "BER: {amount}",
-            "Circumstance.Total.label": "Total CM: {amount}",
-            "Total.label": "Total XP: {amount}"
+            "BER.label": "Base Experience Reward",
+            "Circumstance.Total.label": "Circumstance Modifier"
         },
         "Skills": {
             "arts-group": {
