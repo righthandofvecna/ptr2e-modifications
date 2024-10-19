@@ -2,9 +2,14 @@
     {{!-- Party Leaders --}}
     <fieldset class="party-apply">
         <legend>Applies to</legend>
-    {{#each party}}
-        <img class="icon" src="{{img}}" data-tooltip-direction="DOWN" data-tooltip="{{name}}" />
-    {{/each}}
+        <div class="actor-scroll">
+        {{#each party}}
+            <img class="icon" src="{{img}}" data-tooltip-direction="DOWN" data-tooltip="{{name}}" />
+        {{/each}}
+        </div>
+        {{#if noteAppliesTo}}
+        <p class="note">{{noteAppliesTo}}</p>
+        {{/if}}
     </fieldset>
 
     <fieldset class="prospective-circumstance-modifiers">

@@ -111,9 +111,15 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const modifier = this.modifier;
     const modifierLabel = toCM(modifier);
 
+    const noteAppliesTo = (()=>{
+      const applyMode = game.settings.get(MODULENAME, "expMode");
+      return game.i18n.localize(`PTR2E.XP.ApplyMode.${applyMode}.hint`);
+    })();
+
     return {
         id: this.options.id,
         party,
+        noteAppliesTo,
         modifier,
         modifierLabel,
         cm,
@@ -232,10 +238,25 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const apl = this.level;
 
     const toApply = (()=>{
-      // do only the owner and party if XP All is not set
-
-      // do this if XP All is set
+      const applyMode = game.settings.get(MODULENAME, "expMode");
       let docs = new Set(this.documents);
+      
+      // only give exp to the individuals indicated in the dialog
+      if (applyMode === "individual") return docs;
+
+      // give exp to the individuals in the dialog and their party members
+      if (applyMode === "party") {
+        for (const owner of this.documents) {
+          const party = owner.party;
+          if (!party) continue;
+          for (const partyMember of party.party) {
+            docs.add(partyMember);
+          }
+        }
+        return docs;
+      } 
+
+      // give exp to the individuals in the dialog and all their owned pokemon
       for (const owner of this.documents) {
         if (owner.folder.owner == "") continue;
         docs = docs.union(ExpApp.getNestedFolderContents(owner.folder));
@@ -315,6 +336,21 @@ export function register() {
       return game.users.filter(u => !u.isGM).map(u => u.character)
     }
   });
+
+  game.settings.register(MODULENAME, "expMode", {
+		name: "Experience Mode",
+		default: "party",
+		type: String,
+    choices: {
+      "individual": "Individual",
+      "party": "Party",
+      "all": "All"
+    },
+		scope: "world",
+		requiresReload: false,
+		config: true,
+		hint: "Who to distribute XP to. Individual distributes it only to the individuals, Party distributes XP among the party members, and All distributes XP to party members and pokemon in the box.",
+	});
 
   // add default Circumstance Modifiers
   CONFIG.PTR.data.circumstanceModifiers = {
