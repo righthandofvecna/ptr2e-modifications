@@ -120,3 +120,35 @@
         }
     }
 }
+
+
+.changeListStyleImage(@image) {
+    list-style: none;
+
+    &::before {
+        content: '';
+        display: inline-block;
+        height: 1em;
+        width: 1em;
+        background-image: @image;
+        background-size: contain;
+        background-repeat: no-repeat;
+        margin-left: -1.5em;
+        padding-right: 0.5em;
+    }
+}
+
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li {
+    &.prereq-unmet {
+        .changeListStyleImage(url("../img/unmet.png"))
+    }
+    &.prereq-met {
+        .changeListStyleImage(url("../img/met.png"))
+    }
+    &.prereq-canmeet {
+        .changeListStyleImage(url("../img/canmeet.png"))
+    }
+    &.prereq-unknown {
+        .changeListStyleImage(url("../img/unknown.png"))
+    }
+}

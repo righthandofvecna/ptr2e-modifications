@@ -593,6 +593,44 @@ async function addPerkWebPrerequisiteParsing() {
 }
 
 
+function OnRenderPerkWebHUD(sheet, html) {
+  const perk = game.ptr.web.hudNode?.node?.perk;
+  const actor = game.ptr.web.actor;
+  console.log("onRenderPerkWebHUD", sheet, html, perk, actor);
+  if (!perk || !actor) return;
+
+  // Add prerequisites met/meetable/unmet/unknown (green check/yellow check/red x/question mark)
+
+  const prereqEl = html.querySelector("#perk-web-hud-perk .perk-embed .perk-info .prereqs ul");
+
+  const PREREQ_STATES = {
+    UNKNOWN: "unknown",
+    UNMET: "unmet",
+    CANMEET: "canmeet",
+    MET: "met",
+  }
+  const prereqList = document.createElement("ul");
+  perk.system.prerequisites.forEach((p)=>{
+    const result = actorMeetsPrerequisite(actor, p, false);
+    const [state, tooltip] = (()=>{
+      if (!result.known) return [PREREQ_STATES.UNKNOWN, "This prerequisite cannot be automatically parsed"];
+      if (result.value) return [PREREQ_STATES.MET, `${actor.name} meets this prerequisite.`];
+      if (!result.canMeet) return [PREREQ_STATES.UNMET, `${actor.name} does not meet this prerequisite.`];
+      return [PREREQ_STATES.CANMEET, `${actor.name} can meet this prerequisite automatically.`];
+    })();
+    const li = document.createElement("li");
+    li.classList = `prereq-${state}`;
+    li.appendChild(document.createTextNode(p));
+    li.setAttribute("data-tooltip", tooltip);
+    li.setAttribute("data-tooltip-direction", "RIGHT");
+
+    prereqList.appendChild(li);
+  });
+  
+  prereqEl.replaceWith(prereqList);
+}
+
+
 
 export function register() {
   if (!(game.settings.get(MODULENAME, "perkPrerequisites") ?? true)) return;
@@ -605,4 +643,6 @@ export function register() {
   Hooks.on("ready",()=>{
     addPerkWebPrerequisiteParsing();
   });
+
+  Hooks.on("renderPerkWebHUD", OnRenderPerkWebHUD);
 }

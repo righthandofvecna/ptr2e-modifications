@@ -130,3 +130,59 @@
   height: 20px;
   flex: 0;
 }
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-unmet {
+  list-style: none;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-unmet::before {
+  content: '';
+  display: inline-block;
+  height: 1em;
+  width: 1em;
+  background-image: url("../img/unmet.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-left: -1.5em;
+  padding-right: 0.5em;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-met {
+  list-style: none;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-met::before {
+  content: '';
+  display: inline-block;
+  height: 1em;
+  width: 1em;
+  background-image: url("../img/met.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-left: -1.5em;
+  padding-right: 0.5em;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-canmeet {
+  list-style: none;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-canmeet::before {
+  content: '';
+  display: inline-block;
+  height: 1em;
+  width: 1em;
+  background-image: url("../img/canmeet.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-left: -1.5em;
+  padding-right: 0.5em;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-unknown {
+  list-style: none;
+}
+#perk-web-hud-perk .perk-embed .perk-info .prereqs ul li.prereq-unknown::before {
+  content: '';
+  display: inline-block;
+  height: 1em;
+  width: 1em;
+  background-image: url("../img/unknown.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-left: -1.5em;
+  padding-right: 0.5em;
+}
