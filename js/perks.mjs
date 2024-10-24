@@ -25,13 +25,59 @@ function deparenthesize(str) {
   return "";
 }
 
+function unnest(str) {
+  if (str.charAt(0) === "(" && str.charAt(str.length-1) === ")") {
+    let pn = 1;
+    let shouldRemove = true;
+    for (let idx = 1; idx < str.length - 1; idx++) {
+      if (str.charAt(idx) === "(") pn++;
+      if (str.charAt(idx) === ")") pn--;
+      if (pn === 0) {
+        return str
+      }
+    }
+    if (shouldRemove) {
+      return str.substring(1, str.length - 1);
+    }
+  }
+  return str;
+}
+
 const PrereqRegex = {
   trait: /^\[[^\[\]]*\]$/,
   level: /^Level (?<level>[0-9]+)+$/i,
-  xOf: /^(?<num>(ONE)|(TWO)|(THREE)|(FOUR)|(FIVE)|(SIX)|([0-9]+)) OF: (?<list>.*)$/i
+  xOf: /^(?<num>(ONE)|(TWO)|(THREE)|(FOUR)|(FIVE)|(SIX)|([0-9]+)) OF: (?<list>.*)$/i,
+  moveKnown: /^Move Known: (?<move>.*)$/i,
+  archetypePerks: /^(?<num>(ONE)|(TWO)|(THREE)|(FOUR)|(FIVE)|(SIX)|([0-9]+)) or more "(?<archetype>.*)" Archetype Perks$/i
 };
 
 const SkillsSlugs = {};
+
+
+const PrereqTypos = {
+  // workarounds
+  "Moves Known (Light Screen & Reflect)": "Move Known: Light Screen AND Move Known: Reflect",
+  "A Perk which grants Shields": "Guard Up! OR Resentment OR I Get Knocked Down OR High Noon",
+  "Have a Wielded Item Slot": "[Wielder]",
+
+  // no trait brackets
+  "Underdog": "[Underdog]",
+  "Serpentine Trait": "[Serpentine]",
+
+  // implicit numbers
+  "Running or Swim 35": "Running 35 or Swim 35",
+  "Science (Chemistry) or Occult (Psychic) 60": "Science (Chemistry) 60 or Occult (Psychic) 60",
+
+  // missing brackets
+  "Science (Meteorology) 25 OR (Survival 40 AND Occult Spiritual 40)": "Science (Meteorology) 25 OR (Survival 40 AND Occult (Spiritual) 40)",
+  "Science (Meteorology) 30 OR (Survival 40 AND Occult Spiritual 40 AND Level 30)": "Science (Meteorology) 30 OR (Survival 40 AND Occult (Spiritual) 40 AND Level 30)",
+  "Science (Meteorology) 40 OR (Survival 55 AND Occult Spiritual 55)": "Science (Meteorology) 40 OR (Survival 55 AND Occult (Spiritual) 55)",
+
+  // <Keywords>
+  "<Stat Specialist>": "[HP Specialist] OR [Attack Specialist] OR [Defense Specialist] OR [Special Attack Specialist] OR [Special Defense Specialist] OR [Speed Specialist]",
+  "A <Type>": "[Normal] OR [Fighting] OR [Flying] OR [Poison] OR [Ground] OR [Rock] OR [Bug] OR [Ghost] OR [Steel] OR [Fire] OR [Water] OR [Grass] OR [Electric] OR [Psychic] OR [Ice] OR [Dragon] OR [Dark] OR [Fairy] OR [Nuclear] OR [Shadow]",
+  "<Touched>": "GM Permission", // TODO: legendary-touched?
+}
 
 /**
  * 
@@ -48,24 +94,12 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
   };
 
   // Remove completely enclosing parentheses
-  prereq = prereq.trim();
-  if (prereq.charAt(0) === "(" && prereq.charAt(prereq.length-1) === ")") {
-    let pn = 1;
-    let shouldRemove = true;
-    for (let idx = 1; idx < prereq.length - 1; idx++) {
-      if (prereq.charAt(idx) === "(") pn++;
-      if (prereq.charAt(idx) === ")") pn--;
-      if (pn === 0) {
-        shouldRemove = false;
-        break;
-      }
-    }
-    if (shouldRemove) {
-      prereq = prereq.substring(1, prereq.length - 1);
-    }
+  prereq = unnest(prereq.trim());
+
+  if (prereq in PrereqTypos) {
+    prereq = PrereqTypos[prereq];
   }
   
-
   if (prereq === "None") {
     return returnVal;
   }
@@ -171,8 +205,41 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
   const perkMatch = prereq.match(PrereqRegex.perk);
   if (perkMatch) {
     const hasPerk = actor.items.find(p=>p.type === "perk" && p.name === prereq);
-    if (!hasPerk) returnVal.value = false;
+    returnVal.value = !!hasPerk;
     return returnVal;
+  }
+
+  const moveMatch = prereq.match(PrereqRegex.moveKnown);
+  if (moveMatch) {
+    const hasMove = actor.items.find(p=>p.type === "type" && p.name === moveMatch.groups.move);
+    returnVal.value = !!hasMove;
+    return returnVal;
+  }
+
+  const perkNonMatch = prereq.match(PrereqRegex.noPerk);
+  if (perkNonMatch) {
+    const hasPerk = actor.items.find(p=>p.type === "perk" && p.name === perkNonMatch.groups.perk);
+    returnVal.value = !hasPerk;
+    return returnVal;
+  }
+
+  const archetypePerksMatch = prereq.match(PrereqRegex.archetypePerks);
+  if (archetypePerksMatch) {
+    const perkNum = (()=>{
+      const s = archetypePerksMatch.groups.num;
+      if (["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX"].includes(s.toUpperCase())) {
+        return ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX"].indexOf(s.toUpperCase()) + 1;
+      }
+      return parseInt(s);
+    })();
+    if (!isNaN(perkNum)) {
+      const archetype = archetypePerksMatch.groups.archetype;
+      const perksOfArchetype = actor.items.filter(p=>p.type === "perk" && p.system.design.archetype == archetype);
+      returnVal.known = true;
+      returnVal.value = perksOfArchetype.length >= perkNum;
+      return returnVal;
+    }
+    console.log("invalid archetypePerks:", prereq);
   }
 
   const xOfMatch = prereq.match(PrereqRegex.xOf);
@@ -196,21 +263,11 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
     console.log("invalid xOf:", prereq);
   }
 
-  // TYPO-related
-  if (prereq === "Underdog") {
-    if (!actor.traits.find(t=>t.label == "Underdog")) returnVal.value = false;
-    return returnVal;
-  }
-
-  if (prereq === "Running or Swim 35") {
-    return actorMeetsPrerequisite(actor, "Running 35 or Swim 35", orDefault);
-  }
-
-
   // try to do ORs
   const orPrereqs = prereq.split(/ or /i);
   if (orPrereqs.length > 1) {
     returnVal.known = true;
+    returnVal.value = false;
     for (const subPrereq of orPrereqs) {
       const { value: subValue, known: subKnown } = actorMeetsPrerequisite(actor, subPrereq, false);
       if (!subKnown) {
@@ -232,9 +289,7 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
     returnVal.known = true;
     for (const subPrereq of andPrereqs) {
       const { value: subValue, known: subKnown } = actorMeetsPrerequisite(actor, subPrereq, false);
-      if (!subKnown) {
-        returnVal.known = subKnown;
-      }
+      returnVal.known &&= subKnown;
       if (!subValue) {
         returnVal.value = subValue;
         return returnVal
@@ -336,6 +391,10 @@ async function buyPerk(actor, perkNode) {
         // categorized skill updates
         let currentDelta = delta;
         for (const group of game.ptr.data.skillGroups.groupChainFromSkill(skill).map(g=>skillGroups[g.slug]).reverse()) {
+          if (!group) {
+            console.log("UH OH", skill, skillGroups);
+            continue;
+          }
           const left = (group.points ?? 0) - (group.rvs ?? 0);
           if (left <= 0) continue;
           if (currentDelta > left) {
@@ -570,6 +629,13 @@ async function addPerkWebPrerequisiteParsing() {
   allSkillsRe += "|(Science \\(Bontany\\))";
   SkillsSlugs["Bontany"] = "botany";
 
+  // professions that don't exist
+  allSkillsRe += "|(Profession \\(Ninja\\))";
+  SkillsSlugs["Ninja"] = "ninja";
+
+  allSkillsRe += "|(Profession \\(Gemcutter\\))";
+  SkillsSlugs["Gemcutter"] = "gemcutter";
+
   PrereqRegex.skill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+)$`);
   PrereqRegex.rampingSkill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+) \\+ (?<ramping>[0-9]+) ?x \\(# of (?<perk>.*) Perks already obtained\\)$`, "i");
 
@@ -581,6 +647,7 @@ async function addPerkWebPrerequisiteParsing() {
   }, "");
 
   PrereqRegex.perk = new RegExp(`^(${allPerksRe})$`);
+  PrereqRegex.noPerk = new RegExp(`^DOES NOT HAVE: (?<perk>${allPerksRe})$`);
 
   const PerkStore = game.ptr.web.collection;
   // PerkStore.initialize = PerkStore_initialize.bind(PerkStore); // remove when #599 merges
@@ -596,7 +663,6 @@ async function addPerkWebPrerequisiteParsing() {
 function OnRenderPerkWebHUD(sheet, html) {
   const perk = game.ptr.web.hudNode?.node?.perk;
   const actor = game.ptr.web.actor;
-  console.log("onRenderPerkWebHUD", sheet, html, perk, actor);
   if (!perk || !actor) return;
 
   // Add prerequisites met/meetable/unmet/unknown (green check/yellow check/red x/question mark)
@@ -611,6 +677,7 @@ function OnRenderPerkWebHUD(sheet, html) {
   }
   const prereqList = document.createElement("ul");
   perk.system.prerequisites.forEach((p)=>{
+    if (!p || p === "None") return;
     const result = actorMeetsPrerequisite(actor, p, false);
     const [state, tooltip] = (()=>{
       if (!result.known) return [PREREQ_STATES.UNKNOWN, "This prerequisite cannot be automatically parsed"];
@@ -626,6 +693,12 @@ function OnRenderPerkWebHUD(sheet, html) {
 
     prereqList.appendChild(li);
   });
+  if (!prereqList.childElementCount) {
+    const li = document.createElement("li");
+    li.classList = `prereq-met`;
+    li.appendChild(document.createTextNode("None"));
+    prereqList.appendChild(li);
+  }
   
   prereqEl.replaceWith(prereqList);
 }
@@ -638,6 +711,7 @@ export function register() {
   const module = game.modules.get(MODULENAME);
   module.api ??= {};
   module.api.actorMeetsPrerequisites = actorMeetsPrerequisites;
+  module.api.actorMeetsPrerequisite = actorMeetsPrerequisite;
   module.api.PrereqRegex = PrereqRegex;
 
   Hooks.on("ready",()=>{
