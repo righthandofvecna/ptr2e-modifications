@@ -41,7 +41,7 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
       form: {
         submitOnChange: false,
         closeOnSubmit: true,
-        handler: ExpApp.#onSubmit,
+        handler: ExpApp.onSubmit,
       },
     },
     { inplace: false }
@@ -54,37 +54,39 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
       scrollable: [".scroll"],
     },
   };
-  
+
   static F_BAND = 2.5;
   static NON_PARTY_MODIFIER = 1 / 4;
 
   name;
   documents;
   circumstances;
+  applyMode;
 
   constructor(name, documents, options = {}) {
     options.id = `exp-${documents.length ? documents[0].id || fu.randomID() : fu.randomID()}`;
     super(options);
     this.name = name;
     this.documents = documents;
-    this.circumstances = [];
 
-    if (this.level < 10) {
-      this.circumstances.push({
+    if (this.level < 10 && !this.circumstances.find(cm => cm.label === "Baby's First Steps")) {
+      this.setCircumstances([...this.circumstances, {
         label: "Baby's First Steps",
         bonus: 100,
-      })
-    }
+      }])
+    };
+
+    this.applyMode = game.settings.get(MODULENAME, "expMode");
   }
 
   async _prepareContext() {
-    const party = this.documents.map(a=>({
-        img: a.img,
-        name: a.name,
-        uuid: a.uuid,
+    const party = this.documents.map(a => ({
+      img: a.img,
+      name: a.name,
+      uuid: a.uuid,
     }));
 
-    const cm = this.circumstances.sort((a,b)=>b.bonus - a.bonus).map(c=>({
+    const cm = this.circumstances.sort((a, b) => b.bonus - a.bonus).map(c => ({
       label: c.label,
       bonus: toCM(c.bonus),
     }));
@@ -104,33 +106,30 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
       }
     }
     for (const contents of Object.values(exampleCircumstanceModifiers)) {
-      contents.sort((a,b)=>b.sort - a.sort);
+      contents.sort((a, b) => b.sort - a.sort);
     }
 
     const ber = this.ber;
     const modifier = this.modifier;
     const modifierLabel = toCM(modifier);
 
-    const noteAppliesTo = (()=>{
-      const applyMode = game.settings.get(MODULENAME, "expMode");
-      return game.i18n.localize(`PTR2E.XP.ApplyMode.${applyMode}.hint`);
-    })();
+    const noteAppliesTo = game.i18n.localize(`PTR2E.XP.ApplyMode.${this.applyMode}.hint`);
 
     return {
-        id: this.options.id,
-        party,
-        noteAppliesTo,
-        modifier,
-        modifierLabel,
-        cm,
-        ber,
-        exampleCircumstanceModifiers,
+      id: this.options.id,
+      party,
+      noteAppliesTo,
+      modifier,
+      modifierLabel,
+      cm,
+      ber,
+      exampleCircumstanceModifiers,
     };
   }
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
-    
+
     htmlElement.querySelector(".prospective-circumstance-modifiers .addCustomCircumstance")
       .addEventListener("click", ExpApp.#addCustomCM.bind(this));
 
@@ -141,10 +140,18 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     for (const input of htmlQueryAll(htmlElement, ".applied-circumstance-modifiers .cm button.remove")) {
       input.addEventListener("click", ExpApp.#removeCM.bind(this));
     }
-}
+  }
 
   get title() {
     return `${this.name} - ${game.i18n.localize("PTR2E.XP.title")}`;
+  }
+
+  get circumstances() {
+    return game.settings.get("ptr2e", "expCircumstanceModifiers");
+  }
+
+  async setCircumstances(newCircumstances) {
+      await game.settings.set("ptr2e", "expCircumstanceModifiers", newCircumstances);
   }
 
   get level() {
@@ -153,17 +160,43 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
   get ber() {
     const apl = this.level;
-    return Math.floor(0.25 * (5 / 4) * ( Math.pow(apl + 1, 3) - Math.pow(apl, 3) ));
+    return Math.floor(0.25 * (5 / 4) * (Math.pow(apl + 1, 3) - Math.pow(apl, 3)));
   }
 
   get modifier() {
-    return this.circumstances.reduce((m, c)=>m + (c.bonus ?? 0), 0);
+    return this.circumstances.reduce((m, c) => m + (c.bonus ?? 0), 0);
+  }
+
+  get appliesTo() {
+    let docs = new Set(this.documents);
+
+    // only give exp to the individuals indicated in the dialog
+    if (this.applyMode === "individual") return docs;
+
+    // give exp to the individuals in the dialog and their party members
+    if (this.applyMode === "party") {
+      for (const owner of this.documents) {
+        const party = owner.party;
+        if (!party) continue;
+        for (const partyMember of party.party) {
+          docs.add(partyMember);
+        }
+      }
+      return docs;
+    }
+
+    // give exp to the individuals in the dialog and all their owned pokemon
+    for (const owner of this.documents) {
+      if (owner?.folder?.owner == "") continue;
+      docs = docs.union(ExpApp.getNestedFolderContents(owner.folder));
+    }
+    return docs;
   }
 
   async render(options, _options) {
     if (!this.element) return super.render(options, _options);
 
-    const groupsOpen = htmlQueryAll(this.element, "details[data-group]").reduce((m, d)=>({...m, [d.dataset.group]: d.open}), {});
+    const groupsOpen = htmlQueryAll(this.element, "details[data-group]").reduce((m, d) => ({ ...m, [d.dataset.group]: d.open }), {});
     const prospectiveScrollTop = this.element?.querySelector(".prospective-circumstance-modifiers")?.scrollTop;
     const appliedScrollTop = this.element?.querySelector(".applied-circumstance-modifiers")?.scrollTop;
 
@@ -195,7 +228,7 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
   static calculateExpAward(actor, ber, cr, apl) {
     let calculatedExp = ber;
     // apply CR
-    calculatedExp *= ( 1 + (cr / 100) );
+    calculatedExp *= (1 + (cr / 100));
     // apply F_band
     calculatedExp *= Math.pow((2 * apl + 10) / (apl + actorLevel(actor) + 10), ExpApp.F_BAND);
     // apply party modifier
@@ -211,71 +244,69 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const cmBonus = parseInt(this.element.querySelector(".prospective-circumstance-modifiers .customCircumstanceBonus").value);
     if (isNaN(cmBonus)) return;
 
-    this.circumstances.push({
+    game.settings.set("ptr2e", "expCircumstanceModifiers", [...this.circumstances, {
       label: cmLabel,
       bonus: cmBonus,
-    });
-    this.render(false);
+    }]).then(() => this.render(false));
   }
 
   static #addCM(event) {
     const button = event.currentTarget;
     const cmKey = button.dataset.modifierKey;
-    this.circumstances.push(CONFIG.PTR.data.circumstanceModifiers[cmKey]);
-    this.render(false);
+    game.settings.set("ptr2e", "expCircumstanceModifiers", [
+      ...this.circumstances,
+      CONFIG.PTR.data.circumstanceModifiers[cmKey]
+    ]).then(() => this.render(false));
   }
 
   static #removeCM(event) {
     const button = event.currentTarget;
     const cmIdx = button.dataset.modifierIdx;
-    this.circumstances.splice(cmIdx, 1);
-    this.render(false);
+    game.settings.set("ptr2e", "expCircumstanceModifiers", this.circumstances.splice(cmIdx, 1)).then(() => this.render(false));
   }
 
-  static async #onSubmit() {
+  static async onSubmit() {
     const ber = this.ber;
     const cm = this.modifier;
     const apl = this.level;
 
-    const toApply = (()=>{
-      const applyMode = game.settings.get(MODULENAME, "expMode");
-      let docs = new Set(this.documents);
-      
-      // only give exp to the individuals indicated in the dialog
-      if (applyMode === "individual") return docs;
-
-      // give exp to the individuals in the dialog and their party members
-      if (applyMode === "party") {
-        for (const owner of this.documents) {
-          const party = owner.party;
-          if (!party) continue;
-          for (const partyMember of party.party) {
-            docs.add(partyMember);
-          }
-        }
-        return docs;
-      } 
-
-      // give exp to the individuals in the dialog and all their owned pokemon
-      for (const owner of this.documents) {
-        if (owner.folder.owner == "") continue;
-        docs = docs.union(ExpApp.getNestedFolderContents(owner.folder));
-      }
-      return docs;
-    })();
-
-    console.log("apply to all", toApply);
+    const toApply = this.appliesTo.map(doc => ({
+      uuid: doc.uuid,
+      old: {
+        experience: Math.floor(doc.system.advancement.experience.current),
+        level: doc.system.advancement.level,
+      },
+      new: {
+        experience: Math.floor(doc.system.advancement.experience.current),
+        level: doc.system.advancement.level,
+      },
+      actor: doc,
+    }));
+    const modifiers = this.circumstances;
 
     const notification = ui.notifications.info(game.i18n.localize("PTR2E.XP.Notifications.Info"));
 
-    await Promise.all(toApply.map((d)=>{
-      const pendingXp = d.getFlag(MODULENAME, "pendingXp") ?? 0;
-      const expAward = ExpApp.calculateExpAward(d, ber, cm, apl);
-      return d.setFlag(MODULENAME, "pendingXp", pendingXp + expAward);
+    await Promise.all(toApply.map(async (appliedExp) => {
+      const expAward = this.calculateExpAward(appliedExp.actor, ber, cm, apl);
+      await appliedExp.actor.update({
+        "system.advancement.experience.current": appliedExp.old.experience + expAward,
+      });
+      appliedExp.new.experience = Math.floor(appliedExp.old.experience + expAward);
+      appliedExp.new.level = appliedExp.actor.system.advancement.level;
     }))
+    await this.setCircumstances([]);
 
     ui.notifications.remove(notification);
     ui.notifications.info(game.i18n.localize("PTR2E.XP.Notifications.Success"));
+
+    await CONFIG.PTR.ChatMessage.documentClass.create({
+      type: "experience",
+      system: {
+        expBase: ber * (1 + (cm / 100)),
+        expApplied: toApply,
+        modifiers,
+      },
+    });
   }
 }
 
@@ -297,7 +328,7 @@ function OnRenderActorSheetPTRV2(sheet, html) {
     expHtml.appendChild(levelUpButton);
 
     const newXp = (actor?.system?.advancement?.experience?.current ?? 0) + pendingXp;
-    levelUpButton.addEventListener("click", ()=>{
+    levelUpButton.addEventListener("click", () => {
       return actor.update({
         "system.advancement.experience.current": newXp,
         [`flags.${MODULENAME}.pendingXp`]: 0,
@@ -327,8 +358,12 @@ function OnRenderSidebarTab() {
 
 
 export function register() {
-  if (typeof CONFIG.PTR?.Applications?.ExpApp !== "undefined") return;
-  
+  if (typeof CONFIG.PTR?.Applications?.ExpApp !== "undefined") {
+    CONFIG.PTR.Applications.ExpApp.DEFAULT_OPTIONS.form.handler = ExpApp.onSubmit;
+    Hooks.on("renderActorSheetPTRV2", OnRenderActorSheetPTRV2);
+    return;
+  }
+
   const module = game.modules.get(MODULENAME);
   module.api ??= {};
   module.api.ExpApp = ExpApp;
@@ -340,19 +375,28 @@ export function register() {
   });
 
   game.settings.register(MODULENAME, "expMode", {
-		name: "Experience Mode",
-		default: "party",
-		type: String,
+    name: "Experience Mode",
+    default: "party",
+    type: String,
     choices: {
       "individual": "Individual",
       "party": "Party",
       "all": "All"
     },
-		scope: "world",
-		requiresReload: false,
-		config: true,
-		hint: "Who to distribute XP to. Individual distributes it only to the individuals, Party distributes XP among the party members, and All distributes XP to party members and pokemon in the box.",
-	});
+    scope: "world",
+    requiresReload: false,
+    config: true,
+    hint: "Who to distribute XP to. Individual distributes it only to the individuals, Party distributes XP among the party members, and All distributes XP to party members and pokemon in the box.",
+  });
+
+  game.settings.register("ptr2e", "expCircumstanceModifiers", {
+    name: "PTR2E.Settings.ExpCircumstanceModifiers.Name",
+    hint: "PTR2E.Settings.ExpCircumstanceModifiers.Hint",
+    scope: "world",
+    config: false,
+    type: Array,
+    default: [],
+  });
 
   // add default Circumstance Modifiers
   CONFIG.PTR.data.circumstanceModifiers = {
