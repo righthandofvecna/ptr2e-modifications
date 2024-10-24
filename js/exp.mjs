@@ -7,15 +7,6 @@ function toCM(number) {
   return `${number}%`;
 }
 
-
-function xpToReachLevel(level, isHumanoid) {
-  if (isHumanoid) {
-    return Math.ceil((5 * Math.pow(Math.min(level, 100), 3)) / 4);
-  }
-  return Math.ceil((3 * Math.pow(Math.min(level, 100), 3)) / 6)
-}
-
-
 function actorLevel(actor) {
   const xp = (actor?.system?.advancement?.experience?.current ?? 1) + (actor.getFlag(MODULENAME, "pendingXp") ?? 0);
   if (actor?.isHumanoid?.()) {
@@ -270,18 +261,24 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const cm = this.modifier;
     const apl = this.level;
 
-    const toApply = this.appliesTo.map(doc => ({
-      uuid: doc.uuid,
-      old: {
-        experience: Math.floor(doc.system.advancement.experience.current),
-        level: doc.system.advancement.level,
-      },
-      new: {
-        experience: Math.floor(doc.system.advancement.experience.current),
-        level: doc.system.advancement.level,
-      },
-      actor: doc,
-    }));
+    const toApply = this.appliesTo.map(doc => {
+      const pending = doc.getFlag(MODULENAME, "pendingXp") ?? 0;
+      const xp = Math.floor(doc.system.advancement.experience.current + pending);
+      const level = doc.system.getLevel(xp);
+      return {
+        uuid: doc.uuid,
+        pending: pending,
+        old: {
+          experience: xp,
+          level: level,
+        },
+        new: {
+          experience: xp,
+          level: level,
+        },
+        actor: doc,
+      }
+    });
     const modifiers = this.circumstances;
 
     const notification = ui.notifications.info(game.i18n.localize("PTR2E.XP.Notifications.Info"));
@@ -289,10 +286,10 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     await Promise.all(toApply.map(async (appliedExp) => {
       const expAward = this.calculateExpAward(appliedExp.actor, ber, cm, apl);
       await appliedExp.actor.update({
-        "system.advancement.experience.current": appliedExp.old.experience + expAward,
+        [`flags.${MODULENAME}.pendingXp`]: appliedExp.pending + expAward,
       });
       appliedExp.new.experience = Math.floor(appliedExp.old.experience + expAward);
-      appliedExp.new.level = appliedExp.actor.system.advancement.level;
+      appliedExp.new.level = appliedExp.actor.system.getLevel(appliedExp.new.experience);
     }))
     await this.setCircumstances([]);
 
@@ -360,6 +357,11 @@ function OnRenderSidebarTab() {
 export function register() {
   if (typeof CONFIG.PTR?.Applications?.ExpApp !== "undefined") {
     CONFIG.PTR.Applications.ExpApp.DEFAULT_OPTIONS.form.handler = ExpApp.onSubmit;
+    Object.defineProperty(CONFIG.PTR.Applications.ExpApp.prototype, "level", {
+      get() {
+        return (Math.ceil(this.documents.reduce((l, d) => l + actorLevel(d), 0)) ?? 1) / this.documents.length;
+      }
+    });
     Hooks.on("renderActorSheetPTRV2", OnRenderActorSheetPTRV2);
     return;
   }
