@@ -48,6 +48,7 @@ const PrereqRegex = {
   level: /^Level (?<level>[0-9]+)+$/i,
   xOf: /^(?<num>(ONE)|(TWO)|(THREE)|(FOUR)|(FIVE)|(SIX)|([0-9]+)) OF: (?<list>.*)$/i,
   moveKnown: /^Move Known: (?<move>.*)$/i,
+  moveTrait: /^A \[(?<trait>[^\[\]]*)\] Move$/,
   archetypePerks: /^(?<num>(ONE)|(TWO)|(THREE)|(FOUR)|(FIVE)|(SIX)|([0-9]+)) or more "(?<archetype>.*)" Archetype Perks$/i
 };
 
@@ -56,7 +57,7 @@ const SkillsSlugs = {};
 
 const PrereqTypos = {
   // workarounds
-  "Moves Known (Light Screen & Reflect)": "Move Known: Light Screen AND Move Known: Reflect",
+  "Moves Known (Light Screen & Reflect)": "(Move Known: Light Screen) AND (Move Known: Reflect)",
   "A Perk which grants Shields": "Guard Up! OR Resentment OR I Get Knocked Down OR High Noon",
   "Have a Wielded Item Slot": "[Wielder]",
 
@@ -70,13 +71,66 @@ const PrereqTypos = {
 
   // missing brackets
   "Science (Meteorology) 25 OR (Survival 40 AND Occult Spiritual 40)": "Science (Meteorology) 25 OR (Survival 40 AND Occult (Spiritual) 40)",
-  "Science (Meteorology) 30 OR (Survival 40 AND Occult Spiritual 40 AND Level 30)": "Science (Meteorology) 30 OR (Survival 40 AND Occult (Spiritual) 40 AND Level 30)",
   "Science (Meteorology) 40 OR (Survival 55 AND Occult Spiritual 55)": "Science (Meteorology) 40 OR (Survival 55 AND Occult (Spiritual) 55)",
+  "Science (Meteorology) 30 OR (Survival 40 AND Occult Spiritual 40 AND Level 30)": "Science (Meteorology) 30 OR (Survival 40 AND Occult (Spiritual) 40 AND Level 30)",
+  "Science (Meteorology) 50 OR (Survival 70 AND Occult Spiritual 70 AND Level 60)": "Science (Meteorology) 50 OR (Survival 70 AND Occult (Spiritual) 70 AND Level 60)",
 
   // <Keywords>
   "<Stat Specialist>": "[HP Specialist] OR [Attack Specialist] OR [Defense Specialist] OR [Special Attack Specialist] OR [Special Defense Specialist] OR [Speed Specialist]",
   "A <Type>": "[Normal] OR [Fighting] OR [Flying] OR [Poison] OR [Ground] OR [Rock] OR [Bug] OR [Ghost] OR [Steel] OR [Fire] OR [Water] OR [Grass] OR [Electric] OR [Psychic] OR [Ice] OR [Dragon] OR [Dark] OR [Fairy] OR [Nuclear] OR [Shadow]",
   "<Touched>": "GM Permission", // TODO: legendary-touched?
+}
+
+const Movements = [
+  { label: "Overland", slug: "overland" },
+  { label: "Swim", slug: "swim" },
+  { label: "Teleportation", slug: "teleport" },
+  { label: "Flight", slug: "flight" },
+  { label: "Burrow", slug: "burrow" },
+  { label: "Threaded", slug: "threaded" },
+]
+
+function validatePrerequisite(prereq, fixTypos=true) {
+  // Remove completely enclosing parentheses
+  prereq = unnest(prereq.trim());
+
+  if (fixTypos && prereq in PrereqTypos) {
+    prereq = PrereqTypos[prereq];
+  }
+
+  if (prereq === "None") return true;
+  if (prereq === "GM Permission") return true;
+  if (prereq === "Human") return true;
+  if (prereq.match(PrereqRegex.skill)) return true;
+  if (prereq.match(PrereqRegex.rampingSkill)) return true;
+  for (const {label} of Movements)
+    if (prereq === `An ${label} Movement Allowance` || prereq === `A ${label} Movement Allowance`)
+      return true;
+  if (prereq.match(PrereqRegex.trait)) return true;
+  if (prereq.match(PrereqRegex.level)) return true;
+  if (prereq.match(PrereqRegex.perk)) return true;
+  if (prereq.match(PrereqRegex.moveKnown)) return true;
+  if (prereq.match(PrereqRegex.moveTrait)) return true;
+  if (prereq.match(PrereqRegex.noPerk)) return true;
+  if (prereq.match(PrereqRegex.archetypePerks)) return true;
+  if (prereq.match(PrereqRegex.xOf)) return true;
+
+  const orPrereqs = prereq.split(/ or /i);
+  if (orPrereqs.length > 1) {
+    return orPrereqs.reduce((a, pr)=>a && validatePrerequisite(pr, fixTypos), true);
+  }
+  const andPrereqs = prereq.split(/ and /i);
+  if (andPrereqs.length > 1) {
+    return andPrereqs.reduce((a, pr)=>a && validatePrerequisite(pr, fixTypos), true);
+  }
+
+  return false;
+}
+
+function _traitsEqual(a, b) {
+  if (a === b) return true;
+  if (a.replace(/[0-9\/]+/, "X") === b.replace(/[0-9\/]+/, "X")) return true;
+  return false;
 }
 
 /**
@@ -101,6 +155,16 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
   }
   
   if (prereq === "None") {
+    return returnVal;
+  }
+
+  if (prereq === "GM Permission") {
+    if (!game.user.isGM) returnVal.value = false;
+    return returnVal;
+  }
+
+  if (prereq === "Human") {
+    if (actor.type !== "humanoid") returnVal.value = false;
     return returnVal;
   }
 
@@ -164,14 +228,7 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
     return returnVal;
   }
 
-  for (const {label, slug} of [
-    { label: "Overland", slug: "overland" },
-    { label: "Swim", slug: "swim" },
-    { label: "Teleportation", slug: "teleport" },
-    { label: "Flight", slug: "flight" },
-    { label: "Burrow", slug: "burrow" },
-    { label: "Threaded", slug: "threaded" },
-  ]) {
+  for (const {label, slug} of Movements) {
     if (prereq === `An ${label} Movement Allowance` || prereq === `A ${label} Movement Allowance`) {
       const moveAllowance = actor.system?.movement[slug]?.value ?? 0;
       if (moveAllowance <= 0) returnVal.value = false;
@@ -181,12 +238,7 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
 
   const traitMatch = prereq.match(PrereqRegex.trait);
   if (traitMatch) {
-    if (!actor.traits.find(t=>`[${t.label}]` == prereq)) returnVal.value = false;
-    return returnVal;
-  }
-
-  if (prereq === "GM Permission") {
-    if (!game.user.isGM) returnVal.value = false;
+    if (!actor.traits.find(t=>_traitsEqual(`[${t.label}]`, prereq))) returnVal.value = false;
     return returnVal;
   }
 
@@ -194,11 +246,6 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
   if (levelMatch) {
     const minLevel = parseInt(levelMatch.groups.level);
     if (actor.level < minLevel) returnVal.value = false;
-    return returnVal;
-  }
-
-  if (prereq === "Human") {
-    if (actor.type !== "humanoid") returnVal.value = false;
     return returnVal;
   }
 
@@ -211,7 +258,16 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
 
   const moveMatch = prereq.match(PrereqRegex.moveKnown);
   if (moveMatch) {
-    const hasMove = actor.items.find(p=>p.type === "type" && p.name === moveMatch.groups.move);
+    const hasMove = actor.items.find(p=>p.type === "move" && p.name === moveMatch.groups.move);
+    returnVal.value = !!hasMove;
+    return returnVal;
+  }
+
+  const moveTraitMatch = prereq.match(PrereqRegex.moveTrait);
+  if (moveTraitMatch) {
+    const hasMove = actor.items.find(p=>p.type === "move" && p?.system?.actions?.contents?.some?.(attack => attack.traits.contents.find(t=>_traitsEqual(t.label, moveTraitMatch.groups.trait))));
+    console.log(hasMove, "satisfies", prereq, moveTraitMatch.groups.trait);
+    console.log(_traitsEqual("Drain X", "Drain 1/2"));
     returnVal.value = !!hasMove;
     return returnVal;
   }
@@ -629,12 +685,22 @@ async function addPerkWebPrerequisiteParsing() {
   allSkillsRe += "|(Science \\(Bontany\\))";
   SkillsSlugs["Bontany"] = "botany";
 
+  allSkillsRe += "|(Swimming)";
+  SkillsSlugs["Swimming"] = "swim";
+
+  allSkillsRe += "|(Climbing)";
+  SkillsSlugs["Climbing"] = "climb";
+
   // professions that don't exist
   allSkillsRe += "|(Profession \\(Ninja\\))";
   SkillsSlugs["Ninja"] = "ninja";
 
   allSkillsRe += "|(Profession \\(Gemcutter\\))";
   SkillsSlugs["Gemcutter"] = "gemcutter";
+
+  allSkillsRe += "|(Arts \\(Music\\))";
+  SkillsSlugs["Music"] = "music";
+
 
   PrereqRegex.skill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+)$`);
   PrereqRegex.rampingSkill = new RegExp(`^(?<skill>${allSkillsRe}) (?<value>[0-9]+) \\+ (?<ramping>[0-9]+) ?x \\(# of (?<perk>.*) Perks already obtained\\)$`, "i");
@@ -711,7 +777,7 @@ export function register() {
   const module = game.modules.get(MODULENAME);
   module.api ??= {};
   module.api.actorMeetsPrerequisites = actorMeetsPrerequisites;
-  module.api.actorMeetsPrerequisite = actorMeetsPrerequisite;
+  module.api.validatePrerequisite = validatePrerequisite;
   module.api.PrereqRegex = PrereqRegex;
 
   Hooks.on("ready",()=>{
