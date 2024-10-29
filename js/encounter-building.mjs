@@ -33,6 +33,7 @@ function getRelatedActors(actors) {
 
 function OnRenderCombatTrackerPTR2e(combatTracker, html, context) {
   const combat = context.combat;
+  if (!combat) return;
 
   const alliedBudget = combat.alliedBudget;
   const enemyBudget = combat.enemyBudget;
