@@ -59,7 +59,7 @@ export function register() {
 
   Object.defineProperty(CONFIG.Combat.documentClass.prototype, "allies", {
     get() {
-      const presentAlliedCombatants = this.combatants.filter(c=>c?.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY).map(c=>c.actor);
+      const presentAlliedCombatants = this.combatants.filter(c=>c?.token?.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || game.users.some(u=>!!u.character && (u.character.id === c?.actor?.id || u.character.id === c?.actor?.party?.owner?.id))).map(c=>c.actor);
       return getRelatedActors(presentAlliedCombatants);
     }
   });
@@ -160,7 +160,8 @@ export function register() {
 
   Object.defineProperty(CONFIG.Combat.documentClass.prototype, "enemyBudget", {
     get() {
-      const presentEnemyCombatants = this.combatants.filter(c=>c?.token?.disposition === CONST.TOKEN_DISPOSITIONS.HOSTILE).map(c=>c.actor);
+      const allFriendlyParticipants = this.allies;
+      const presentEnemyCombatants = this.combatants.filter(c=>c?.token?.disposition === CONST.TOKEN_DISPOSITIONS.HOSTILE && !allFriendlyParticipants.has(c?.actor)).map(c=>c.actor);
       const allEnemies = getRelatedActors(presentEnemyCombatants);
       const APL = this.alliedAPL;
 
