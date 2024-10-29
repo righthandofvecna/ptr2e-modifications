@@ -80,7 +80,7 @@ export function register() {
 		scope: "world",
 		requiresReload: true,
 		config: true,
-		hint: `Allow users to roll status moves, as well as attacks. WARNING: Enabling this may entail "any amount of unforeseen consequences", including and limited to: a slightly wonky chat message. ${String.fromCodePoint(0x1F631)}`
+		hint: `Allow users to roll status moves, as well as attacks. WARNING: this may not work. I have so far been unable to find a scenario where it doesn't work... but it's not guaranteed.`,
 	});
 
   game.settings.register(MODULENAME, "categorizedSkills", {
@@ -89,19 +89,17 @@ export function register() {
 		type: Boolean,
 		scope: "world",
 		requiresReload: true,
-		config: true,
+		config: false,
 		hint: "Enable using categorized nested skills"
 	});
 
-	if (game.settings.get(MODULENAME, "categorizedSkills")) {
-		game.settings.register(MODULENAME, "maxGroupInvestment", {
-			name: "Max Group Investment",
-			default: 20,
-			type: new foundry.data.fields.NumberField({nullable: false, min: 0, step: 1, default: 20}),
-			scope: "world",
-			requiresReload: true,
-			config: true,
-			hint: "The maximum points you can put in a group"
-		});
-	}
+	game.settings.register(MODULENAME, "maxGroupInvestment", {
+		name: "Max Group Investment",
+		default: 20,
+		type: new foundry.data.fields.NumberField({nullable: false, min: 0, step: 1, default: 20}),
+		scope: "world",
+		requiresReload: true,
+		config: game.settings.get(MODULENAME, "categorizedSkills"),
+		hint: "The maximum points you can put in a group"
+	});
 }
