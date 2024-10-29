@@ -355,6 +355,7 @@ function OnRenderSidebarTab() {
 
 
 export function register() {
+  if (!game.settings.get(MODULENAME, "useExpSystem")) return;
   if (typeof CONFIG.PTR?.Applications?.ExpApp !== "undefined") {
     CONFIG.PTR.Applications.ExpApp.DEFAULT_OPTIONS.form.handler = ExpApp.onSubmit;
     Object.defineProperty(CONFIG.PTR.Applications.ExpApp.prototype, "level", {

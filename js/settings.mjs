@@ -102,4 +102,14 @@ export function register() {
 		config: game.settings.get(MODULENAME, "categorizedSkills"),
 		hint: "The maximum points you can put in a group"
 	});
+
+	game.settings.register(MODULENAME, "useExpSystem", {
+		name: "Modify Exp System",
+		default: false,
+		type: Boolean,
+		scope: "world",
+		requiresReload: true,
+		config: true,
+		hint: "Whether to use a level-up button and pending exp flags",
+	});
 }
