@@ -186,3 +186,43 @@
   margin-left: -1.5em;
   padding-right: 0.5em;
 }
+#ptr2e-clock-panel .day-clock {
+  height: 125px;
+  background-size: cover;
+  background-position: center;
+  --unfilled-clock-color: darkgray;
+  --clock-color: white;
+}
+#ptr2e-clock-panel .day-clock.morning {
+  background-image: url("../img/clocks/morning.webp");
+  --clock-color: #fcfc81;
+}
+#ptr2e-clock-panel .day-clock.daytime {
+  background-image: url("../img/clocks/daytime.webp");
+  --clock-color: yellow;
+}
+#ptr2e-clock-panel .day-clock.afternoon {
+  background-image: url("../img/clocks/afternoon.webp");
+  --clock-color: #ffcf54;
+}
+#ptr2e-clock-panel .day-clock.evening {
+  background-image: url("../img/clocks/evening.webp");
+  --clock-color: #a869a8;
+}
+#ptr2e-clock-panel .day-clock.night {
+  background-image: url("../img/clocks/night.webp");
+  --clock-color: #3a093a;
+}
+#ptr2e-clock-panel .day-clock .clock {
+  height: 100px;
+  width: 100px;
+  background: conic-gradient(var(--clock-color) var(--filled-ratio), var(--unfilled-clock-color) var(--filled-ratio) 1turn);
+  --clock-color: inherit !important;
+  --clock-color-dark: black;
+}
+#ptr2e-clock-panel .day-clock .name-section {
+  text-shadow: 0px 0px 2px black;
+}
+#ptr2e-clock-panel .day-clock .name-section .name {
+  font-size: 1.5em;
+}
