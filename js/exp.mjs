@@ -1,4 +1,4 @@
-import { MODULENAME, htmlQueryAll } from "./utils.mjs";
+import { MODULENAME, htmlQueryAll, sluggify } from "./utils.mjs";
 
 
 
@@ -296,15 +296,183 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
     ui.notifications.remove(notification);
     ui.notifications.info(game.i18n.localize("PTR2E.XP.Notifications.Success"));
 
-    await CONFIG.PTR.ChatMessage.documentClass.create({
-      type: "experience",
-      system: {
-        expBase: ber * (1 + (cm / 100)),
-        expApplied: toApply,
-        modifiers,
-      },
-    });
+    if ("experience" in CONFIG.PTR.ChatMessage.dataModels) {
+      await CONFIG.PTR.ChatMessage.documentClass.create({
+        type: "experience",
+        system: {
+          expBase: ber * (1 + (cm / 100)),
+          expApplied: toApply,
+          modifiers,
+        },
+      });
+    } else {
+      await CONFIG.PTR.ChatMessage.documentClass.create({
+        type: "base",
+        title: "Experience Awarded",
+        content: `<p>Awarded a base of ${Math.round(ber*modifiers)} XP!</p>`
+      });
+    }
   }
+}
+
+async function ApplyLevelUp(actor) {
+  if (!actor || !actor?.system?.advancement) return;
+  const pendingXp = actor.getFlag(MODULENAME, "pendingXp") ?? 0
+  const newXp = (actor?.system?.advancement?.experience?.current ?? 0) + pendingXp;
+
+  const oldLevel = actor.system.advancement.level;
+
+  const actorUpdates = {
+    "system.advancement.experience.current": newXp,
+    [`flags.${MODULENAME}.pendingXp`]: 0,
+  };
+  const newLevel = actorLevel(actor);
+
+  let evolution = (()=>{
+    function _getEvolution(evos) {
+      if (!evos) return null;
+      for (const evo of evos) {
+        if (evo.name === actor.system.species.slug) return evo;
+        const subEvo = _getEvolution(evo.evolutions);
+        if (!!subEvo) return subEvo;
+      }
+      return null;
+    }
+    if (!actor.system.species.evolutions) return null;
+    return _getEvolution([actor.system.species.evolutions])
+  })();
+
+  const originalEvolution = evolution;
+
+  let evolutionsDenied = new Set();
+  const newMoves = []; // the moves you should learn on level-up
+  for (let level = oldLevel+1; level <= newLevel; level++) {
+    // give moves by level up!
+    newMoves.push(...(actor.system.species.moves.levelUp.filter(m=>m.level === level)));
+
+    if (!evolution) continue;
+
+    // check if we should evolve this level
+    const availableEvolutions = evolution.evolutions.filter(e=>e.methods.some(m=>m.type === "level" && m.level <= level) && !evolutionsDenied.has(e.name));
+    if (availableEvolutions.length > 0) {
+      const evoOptions = availableEvolutions.reduce((o, evo)=>o+`<option value="${evo.name}">${evo.name.titleCase()}</option>`, "");
+      const selectedEvolution = await new Promise(async (resolve)=>{
+        Dialog.prompt({
+          title: `${actor.name} is evolving!`,
+          content: `
+              <div class="form-group">
+                <label for="evolution">Evolution</label>
+                <select name="evolution">
+                  ${evoOptions}
+                  <option value="">Do Not Evolve</option>
+                </select>
+              </div>
+          `,
+          callback: (html) => resolve(html.find('[name="evolution"]')?.val() ?? ""),
+        }).catch((e)=>{
+          console.error("Error making dialog for selecting evolution:", e);
+          resolve("");
+        });
+      });
+      if (!selectedEvolution) {
+        // add all the evolutions to evolutionsDenied
+        availableEvolutions.forEach(evo=>evolutionsDenied.add(evo.name));
+      } else {
+        // do the evolution!
+        evolution = availableEvolutions.find(evo=>evo.name === selectedEvolution);
+        const species = await fromUuid(evolution.uuid);
+        if (!!species) {
+          const speciesSystem = species.toObject().system;
+          speciesSystem.slug ||= sluggify(speciesSystem.name);
+          actorUpdates["system.species"] = speciesSystem;
+
+          // update the actor's image
+          const oldImg = await (async () => {
+            const config = game.ptr.data.artMap.get(actor.system.species.slug);
+            if (!config) return "icons/svg/mystery-man.svg";
+            const resolver = await game.ptr.util.image.createFromSpeciesData(
+              {
+                dexId: actor.system.species.number,
+                shiny: actor.system.shiny,
+                forms: actor.system.species.form ? [actor.system.species.form] : [],
+              },
+              config
+            );
+            return resolver?.result || "icons/svg/mystery-man.svg";
+          })();
+          if (actor.img === oldImg) {
+            actorUpdates.img = await (async () => {
+              const config = game.ptr.data.artMap.get(speciesSystem.slug);
+              if (!config) return actorUpdates.img || actor.img;
+              const resolver = await game.ptr.util.image.createFromSpeciesData(
+                {
+                  dexId: speciesSystem.number,
+                  shiny: actor.system.shiny,
+                  forms: speciesSystem.form ? [speciesSystem.form] : [],
+                },
+                config
+              );
+              return resolver?.result || actorUpdates.img || actor.img;
+            })();
+
+            if (actor.prototypeToken.texture.src === actor.img) {
+              actorUpdates["prototypeToken.texture.src"] = actorUpdates.img;
+            };
+          }
+
+          // if the actor is not nicknamed, rename it
+          if (actor.name === originalEvolution.name.titleCase()) {
+            actorUpdates["name"] = evolution.name.titleCase();
+          }
+          // add moves learned at evolution level
+          newMoves.push(...(speciesSystem.moves.levelUp.filter(m=>m.level === level)));
+          ui.notifications.info(`Evolved into ${evolution.name.titleCase()}!`);
+        } else {
+          ui.notifications.error(`Cannot evolve into ${evolution.name.titleCase()}!`);
+        }
+      }
+    }
+  }
+
+  // name really seems like it's a slug for these moves...
+  const moves = (await Promise.all(newMoves
+    .filter(move => !actor.itemTypes.move.some(item => item.slug == move.name))
+    .map(move => fromUuid(move.uuid)))
+  ).flatMap(move => move ?? []);
+
+  actorUpdates.items ??= [];
+  actorUpdates.items.push(...moves.map(move => move.toObject()));
+  actorUpdates["flags.ptr2e-modifications.movesToAdd"] = actorUpdates.items;
+
+  // fire off a pre-evolve hook
+  if (evolution !== originalEvolution) {
+    Hooks.call("ptr2e.preEvolve", actor, actorUpdates);
+  }
+
+  const originalName = actor.name;
+  
+  await actor.update(actorUpdates);
+
+  let message = `<p>${originalName} reached Level ${actor.system.advancement.level}!</p>`;
+  if (evolution !== originalEvolution) {
+    message += `<p>${originalName} evolved into ${actor.system?.species?.slug?.titleCase?.() ?? "Nothing"}</p>`;
+  }
+  if (moves) {
+    message += `<p>${actor.name} learned the following moves:</p><ul>` + moves.reduce((a, m)=>a + `<li>${m.link}</li>`, "") + "</ul>"
+  }
+  // level-up notification
+  await CONFIG.PTR.ChatMessage.documentClass.create({
+    type: "base",
+    title: `${actor.name} Level Up!`,
+    content: message,
+  });
+}
+
+// this is dumb, but un-do the auto-level up assigned moves
+function OnPreUpdateActor(actor, changes) {
+  if (!changes?.flags?.["ptr2e-modifications"]?.movesToAdd) return;
+  changes.items = changes.flags["ptr2e-modifications"].movesToAdd;
+  changes.flags["ptr2e-modifications"].movesToAdd = undefined;
 }
 
 
@@ -324,13 +492,7 @@ function OnRenderActorSheetPTRV2(sheet, html) {
     levelUpButton.style.animation = "glow 1s infinite alternate";
     expHtml.appendChild(levelUpButton);
 
-    const newXp = (actor?.system?.advancement?.experience?.current ?? 0) + pendingXp;
-    levelUpButton.addEventListener("click", () => {
-      return actor.update({
-        "system.advancement.experience.current": newXp,
-        [`flags.${MODULENAME}.pendingXp`]: 0,
-      })
-    });
+    levelUpButton.addEventListener("click", () => ApplyLevelUp(actor), { once: true });
   } else {
     // TODO: add a bar?
   }
@@ -356,6 +518,9 @@ function OnRenderSidebarTab() {
 
 export function register() {
   if (!game.settings.get(MODULENAME, "useExpSystem")) return;
+  
+  Hooks.on("preUpdateActor", OnPreUpdateActor);
+  Hooks.on("renderActorSheetPTRV2", OnRenderActorSheetPTRV2);
   if (typeof CONFIG.PTR?.Applications?.ExpApp !== "undefined") {
     CONFIG.PTR.Applications.ExpApp.DEFAULT_OPTIONS.form.handler = ExpApp.onSubmit;
     Object.defineProperty(CONFIG.PTR.Applications.ExpApp.prototype, "level", {
@@ -363,7 +528,6 @@ export function register() {
         return (Math.ceil(this.documents.reduce((l, d) => l + actorLevel(d), 0)) ?? 1) / this.documents.length;
       }
     });
-    Hooks.on("renderActorSheetPTRV2", OnRenderActorSheetPTRV2);
     return;
   }
 
@@ -641,6 +805,6 @@ export function register() {
     },
   }
 
-  Hooks.on("renderActorSheetPTRV2", OnRenderActorSheetPTRV2);
+  // Hooks only to render if the core version doesn't have the exp system
   Hooks.on("renderSidebarTab", OnRenderSidebarTab);
 }
