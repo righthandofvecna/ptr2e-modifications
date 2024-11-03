@@ -481,6 +481,9 @@ function OnRenderActorSheetPTRV2(sheet, html) {
   if (!actor) return;
 
   const expHtml = html.querySelector(".sidebar .experience");
+  if (!!expHtml.querySelector("button")) return;
+  // TODO: the same thing for the bar
+
   expHtml.querySelector(".xp-current")?.remove?.();
   expHtml.querySelector(".xp-diff")?.remove?.();
   expHtml.querySelector(".xp-next")?.remove?.();
