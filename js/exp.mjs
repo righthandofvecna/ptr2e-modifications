@@ -457,7 +457,7 @@ async function ApplyLevelUp(actor) {
   if (evolution !== originalEvolution) {
     message += `<p>${originalName} evolved into ${actor.system?.species?.slug?.titleCase?.() ?? "Nothing"}</p>`;
   }
-  if (moves) {
+  if (moves.length > 0) {
     message += `<p>${actor.name} learned the following moves:</p><ul>` + moves.reduce((a, m)=>a + `<li>${m.link}</li>`, "") + "</ul>"
   }
   // level-up notification

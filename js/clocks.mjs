@@ -1,19 +1,10 @@
 
-
-
-
-// function OnRenderClockEditor(clockEditor, html) {
-//   const putInside = html.querySelector("main fieldset");
-
-//   $(putInside).append(`<div class="form-group"><label>Day Clock?</label><div class="form-fields"><input type="checkbox" name="dayClock"></div><p class="hint">Whether or not this is a day clock.</p></div>`);
-
-
-//   console.log(...arguments);
-// };
-
+function isDayClock(clock) {
+  return (clock.name ?? clock.label) === "Day Clock";
+}
 
 function OnRenderClockPanel(clockPanel, html) {
-  const clock = clockPanel.clocks.find(clock=>clock.name === "Day Clock");
+  const clock = clockPanel.clocks.find(isDayClock);
   const clockId = clock?.id;
   if (!clockId) return;
   const dayClock = $(html).find(`.clock-list .clock-entry[data-id="${clockId}"]`);
@@ -37,10 +28,34 @@ function OnRenderClockPanel(clockPanel, html) {
   $(clockHtml).css("--areas", 5).css("--filled", parseInt($(clockHtml).css("--filled")) + 1).append("<div class='spoke' style='--index: 4'></div>");
 };
 
+function OnPreUpdateSetting(setting, update, metadata, userId) {
+  if (setting.key !== "ptr2e.clocks") return;
+  const updateJs = JSON.parse(update.value);
+
+  const originalDayClock = setting.value.clocks.find(isDayClock);
+  const newDayClock = updateJs.clocks.find(isDayClock);
+
+  if (!originalDayClock || !newDayClock) return;
+  if (originalDayClock.value == newDayClock.value) return;
+
+  if (originalDayClock.value == originalDayClock.max && newDayClock.value == 0) {
+    // it's a brand new day!
+    Dialog.confirm({
+      title: "New Day: Roll Luck?",
+      content: "Roll luck for all [Ace] characters?",
+      yes: ()=>{
+        const aces = game.actors.filter(a=>a.system.traits.has("ace"));
+        aces.forEach(actor=>actor.system.skills.get("luck")?.endOfDayLuckRoll?.());
+      },
+      no: ()=>undefined,
+    });
+  }
+}
+
 
 
 export function register() {
 
-  // Hooks.on("renderClockEditor", OnRenderClockEditor);
   Hooks.on("renderClockPanel", OnRenderClockPanel);
+  Hooks.on("preUpdateSetting", OnPreUpdateSetting);
 };
