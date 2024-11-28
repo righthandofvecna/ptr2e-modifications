@@ -5,6 +5,7 @@ import * as actions from "./actions.mjs";
 import * as clocks from "./clocks.mjs";
 import * as encounter from "./encounter-building.mjs";
 import * as exp from "./exp.mjs";
+import * as tokenDisplay from "./token-display.mjs";
 import * as tokenDrop from "./token-drop.mjs";
 import * as skills from "./categorized-skill-system/index.mjs";
 
@@ -26,6 +27,12 @@ Hooks.on("init", ()=>{
     exp.register();
   } catch (e) {
     console.error("exp.register():", e);
+  }
+
+  try {
+    tokenDisplay.register();
+  } catch (e) {
+    console.error("tokenDisplay.register():", e);
   }
 
   try {
