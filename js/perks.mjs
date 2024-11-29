@@ -64,6 +64,7 @@ const PrereqTypos = {
   // no trait brackets
   "Underdog": "[Underdog]",
   "Serpentine Trait": "[Serpentine]",
+  "Poison": "[Poison]",
 
   // implicit numbers
   "Running or Swim 35": "Running 35 or Swim 35",
