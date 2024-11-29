@@ -1,4 +1,4 @@
 
 
 release:
-	zip module.zip -r css/applications.css img js lang templates module.json
+	zip module.zip -r css/main.css img js lang templates module.json
