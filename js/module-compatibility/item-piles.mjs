@@ -102,6 +102,8 @@ function integrateItemPiles() {
       "CURRENCIES": [],
     });
 
+    game.settings.set("item-piles", "hideActorHeaderButton", true);
+
     // PTR2e seems to use the actor hook for ITEMS as well....
     // Hooks.on("getActorSheetHeaderButtons", insertActorHeaderButtons);
     Hooks.on("getActorSheetHeaderButtons", (sheet)=>{
