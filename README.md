@@ -7,3 +7,4 @@ This module currently does the following:
 - Adds perk prerequisite checking (string parsing) and auto-skill assignment if you can meet the prerequisite by increasing a skill (can be disabled in the settings)
 - Prompts the gm to add a token to an encounter if you add one mid-battle
 - A categorized skill system. This is currently hidden from the options, as it's not ready for testing (switching back and forth causes issues)
+- Module compatibility for Item Piles
