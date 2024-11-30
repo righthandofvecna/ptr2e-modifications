@@ -26,16 +26,16 @@ function OnPreCreateCombatant(actor, { actorId, hidden, sceneId, tokenId }={}, m
  */
 function insertActorHeaderButtons(actorSheet) {
   if (!game.user.isGM) return;
-  if (!!actorSheet.options.actions["configure-item-piles"]) return;
 
   let obj = actorSheet?.object ?? actorSheet?.actor;
-
-  actorSheet.options.window.controls.unshift({
-    label: game.settings.get("item-piles", "hideActorHeaderText") ? "" : game.i18n.localize("ITEM-PILES.HeaderButtons.Configure"),
-    icon: "fas fa-box-open",
-    class: "item-piles-config-button",
-    action: "configure-item-piles",
-  });
+  if (!actorSheet.options.window.controls.find(c=>c.action === "configure-item-piles")) {
+    actorSheet.options.window.controls.unshift({
+      label: game.settings.get("item-piles", "hideActorHeaderText") ? "" : game.i18n.localize("ITEM-PILES.HeaderButtons.Configure"),
+      icon: "fas fa-box-open",
+      class: "item-piles-config-button",
+      action: "configure-item-piles",
+    });
+  };
   actorSheet.options.actions["configure-item-piles"] ??= ()=>game.itempiles.apps.ItemPileConfig.show(obj);
 }
 
@@ -46,15 +46,16 @@ function insertActorHeaderButtons(actorSheet) {
  */
 function insertItemHeaderButtons(itemSheet) {
   if (!game.user.isGM) return;
-  if (!!itemSheet.options.actions["configure-item-pile-entry"]) return;
 
   let obj = itemSheet?.object ?? itemSheet?.item;
-  itemSheet.options.window.controls.unshift({
-    label: game.settings.get("item-piles", "hideActorHeaderText") ? "" : game.i18n.localize("ITEM-PILES.HeaderButtons.Configure"),
-    icon: "fas fa-box-open",
-    class: "item-piles-config-button",
-    action: "configure-item-pile-entry",
-  });
+  if (!actorSheet.options.window.controls.find(c=>c.action === "configure-item-pile-entry")) {
+    itemSheet.options.window.controls.unshift({
+      label: game.settings.get("item-piles", "hideActorHeaderText") ? "" : game.i18n.localize("ITEM-PILES.HeaderButtons.Configure"),
+      icon: "fas fa-box-open",
+      class: "item-piles-config-button",
+      action: "configure-item-pile-entry",
+    });
+  };
   itemSheet.options.actions["configure-item-pile-entry"] ??= async ()=>{
     if (game.modules.get("item-linking")?.active) {
       const linkedItemUuid = foundry.utils.getProperty(obj, "flags.item-linking.baseItem") ?? false;
