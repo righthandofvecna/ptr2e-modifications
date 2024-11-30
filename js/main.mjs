@@ -7,6 +7,7 @@ import * as encounter from "./encounter-building.mjs";
 import * as exp from "./experience/index.mjs";
 import * as tokenDisplay from "./token-display.mjs";
 import * as tokenDrop from "./token-drop.mjs";
+import * as moduleCompatibility from "./module-compatibility/index.mjs";
 import * as skills from "./categorized-skill-system/index.mjs";
 
 
@@ -57,6 +58,12 @@ Hooks.on("init", ()=>{
     encounter.register();
   } catch (e) {
     console.error("encounter.register():", e);
+  }
+
+  try {
+    moduleCompatibility.register();
+  } catch (e) {
+    console.error("moduleCompatibility.register():", e);
   }
 
   try {
