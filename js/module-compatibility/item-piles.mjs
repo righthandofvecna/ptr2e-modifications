@@ -72,7 +72,7 @@ function integrateItemPiles() {
       "ITEM_FILTERS": [
         {
           "path": "type",
-          "filters": "species,move,ability,perk,summon"
+          "filters": "ability,blueprint,effect,move,perk,species,summon"
         }
       ],
 
