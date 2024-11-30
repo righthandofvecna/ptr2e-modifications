@@ -113,6 +113,26 @@ export function register() {
 		hint: "Whether to use a level-up button and pending exp flags",
 	});
 
+	game.settings.register(MODULENAME, "disableSmallHumanoidTokens", {
+		name: "Disable Small Humanoid Tokens",
+		default: true,
+		type: Boolean,
+		scope: "world",
+		requiresReload: true,
+		config: true,
+		hint: "For humanoid tokens, set the minimum automatic size to 1 grid space.",
+	});
+
+	game.settings.register(MODULENAME, "disableSmallPokemonTokens", {
+		name: "Disable Small Pokemon Tokens",
+		default: false,
+		type: Boolean,
+		scope: "world",
+		requiresReload: true,
+		config: true,
+		hint: "For pokemon tokens, set the minimum automatic size to 1 grid space.",
+	});
+
 	if (game.modules.get("item-piles")?.active) {
 		game.settings.register(MODULENAME, "excludeItemPileFromCombat", {
 			name: "Exclude Item Pile From Combat",
