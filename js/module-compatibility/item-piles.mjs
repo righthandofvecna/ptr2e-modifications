@@ -48,7 +48,7 @@ function insertItemHeaderButtons(itemSheet) {
   if (!game.user.isGM) return;
 
   let obj = itemSheet?.object ?? itemSheet?.item;
-  if (!actorSheet.options.window.controls.find(c=>c.action === "configure-item-pile-entry")) {
+  if (!itemSheet.options.window.controls.find(c=>c.action === "configure-item-pile-entry")) {
     itemSheet.options.window.controls.unshift({
       label: game.settings.get("item-piles", "hideActorHeaderText") ? "" : game.i18n.localize("ITEM-PILES.HeaderButtons.Configure"),
       icon: "fas fa-box-open",

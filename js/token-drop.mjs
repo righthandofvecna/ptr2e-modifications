@@ -6,6 +6,13 @@ function OnCreateToken(token) {
   if (!scene) return;
   const combat = game.combats.find(c=>c.scene === scene);
   if (!combat || !combat.active) return;
+
+  if (game.modules.get("item-piles")?.active &&
+      game.settings.get(MODULENAME, "excludeItemPileFromCombat") &&
+      token?.flags?.["item-piles"]?.data?.enabled) {
+    return;
+  }
+
   Dialog.confirm({
     title: `Token Drop - ${token.name}`,
     content: `Add ${token.name} to the active combat?`,
