@@ -112,4 +112,16 @@ export function register() {
 		config: true,
 		hint: "Whether to use a level-up button and pending exp flags",
 	});
+
+	if (game.modules.get("item-piles")?.active) {
+		game.settings.register(MODULENAME, "excludeItemPileFromCombat", {
+			name: "Exclude Item Pile From Combat",
+			default: true,
+			type: Boolean,
+			scope: "world",
+			requiresReload: false,
+			config: true,
+			hint: "Whether to exclude item piles from being added to the initiative tracker when selecting and adding many tokens. Even if enabled, you can still add them individually. If you use the same actors for both combat and also as merchants configured as item piles, you may wish to disable this setting.",
+		});
+	}
 }

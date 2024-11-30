@@ -1,7 +1,22 @@
-
+import { MODULENAME } from "../utils.mjs";
 
 function OnItemPilesPreDropItemDetermined(a, b, dropData, d) {
   if (dropData?.item?.type === "species") return false;
+}
+
+function OnPreCreateCombatant(actor, { actorId, hidden, sceneId, tokenId }={}, metadata, userId) {
+  if (!game.settings.get(MODULENAME, "excludeItemPileFromCombat") || !actor?.token?.flags?.["item-piles"]?.data?.enabled) return;
+
+  // check if we're only selecting item piles
+  const selected = game.canvas.tokens.placeables.filter(o => o.controlled).map(o => o.document);
+  const selectedPiles = selected.filter((token)=>token?.flags?.["item-piles"]?.data?.enabled);
+  const allPiles = selected.length == selectedPiles.length;
+  if (allPiles) return;
+  // actor.token.object.release();
+  if (selectedPiles[0]?.id === tokenId) {
+    ui.notifications.info(`${selectedPiles.length} selected Item Pile${selectedPiles.length!==1?"s":""} not added to combat!`);
+  }
+  return false;
 }
 
 /**
@@ -99,7 +114,10 @@ function integrateItemPiles() {
 }
 
 export function register() {
+  if (!game.modules.get("item-piles")?.active) return;
+
   Hooks.on("item-piles-preDropItemDetermined", OnItemPilesPreDropItemDetermined);
+  Hooks.on("preCreateCombatant", OnPreCreateCombatant);
   // see docs for more info https://github.com/fantasycalendar/FoundryVTT-ItemPiles/blob/master/docs/api.md
   integrateItemPiles();
 }
