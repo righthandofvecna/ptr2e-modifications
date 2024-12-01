@@ -19,6 +19,7 @@ function getActorCost(actor, APL) {
 
 function getRelatedActors(actors) {
   return new Set(actors.flatMap(actor=>{
+    if (!actor) return [];
     const allies = [actor];
     actor._party = undefined; // this is to fix a bug in core (#718)
 
@@ -28,7 +29,7 @@ function getRelatedActors(actors) {
       allies.push(...actor.party.party);
     }
     return allies;
-  }));
+  }).filter(a=>!a));
 }
 
 function OnRenderCombatTrackerPTR2e(combatTracker, html, context) {
