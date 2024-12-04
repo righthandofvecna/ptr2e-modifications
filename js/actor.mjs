@@ -56,29 +56,29 @@ function prepareDerivedData(wrapper) {
 }
 
 
-function OnPreUpdateItem(item, updateData) {
-  if (item.type !== "species") return;
-  const actor = item.parent;
-  if (!actor) return;
-  if (updateData?.system?.slug && !updateData.name) {
-    updateData.name = updateData.system.slug.titleCase();
+// TODO: make a synchronous version of game.ptr.util.image.createFromSpeciesData?
+// it being async REALLY makes it hard to do updates with images in them
+
+async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
+  if (speciesData?.system?.slug && !speciesData.name) {
+    speciesData.name = speciesData.system.slug.titleCase();
   }
   // check if the name of the actor is the same as the species item
   const actorUpdates = {};
-  if (updateData.name && actor.name === item.name) {
-    actorUpdates.name = updateData.name;
+  if (speciesData.name && actorData.name === item.name) {
+    actorUpdates.name = speciesData.name;
   }
-  if (updateData.name && actor?.prototypeToken?.name === item.name) {
-    actorUpdates["prototypeToken.name"] = updateData.name;
+  if (speciesData.name && actorData?.prototypeToken?.name === item.name) {
+    actorUpdates["prototypeToken.name"] = speciesData.name;
   }
 
-  const slug = updateData?.system?.slug ?? item?.system?.slug;
-  const dexId = updateData?.system?.number ?? item.system.number;
-  const shiny = actor?.system?.shiny ?? false;
-  const form = updateData?.system?.form ?? item.system.form;
+  const slug = speciesData?.system?.slug ?? item?.system?.slug;
+  const dexId = speciesData?.system?.number ?? item.system.number;
+  const shiny = actorData?.system?.shiny ?? false;
+  const form = speciesData?.system?.form ?? item.system.form;
 
   // update the image/token image
-  return (async()=>{
+  const {portrait, token} = await (async()=>{
     const baseArt = game.ptr.data.artMap.get(slug);
     if (!baseArt)
       return {
@@ -89,7 +89,7 @@ function OnPreUpdateItem(item, updateData) {
       dexId,
       shiny,
       forms: form ? [form] : [],
-      gender: actor.system?.gender,
+      gender: actorData.system?.gender,
     }, baseArt);
     if (!potraitImg?.result)
       return {
@@ -100,15 +100,45 @@ function OnPreUpdateItem(item, updateData) {
       dexId,
       shiny,
       forms: form ? [form, "token"] : ["token"],
-      gender: actor.system?.gender,
+      gender: actorData.system?.gender,
     }, baseArt);
     return {
         portrait: potraitImg.result,
         token: tokenImg?.result ?? potraitImg.result
     }
-  })().then(({portrait, token})=>{
-    actorUpdates.img = portrait;
-    actorUpdates["prototypeToken.texture.src"] = token;
+  })()
+
+  actorUpdates.img = portrait;
+  actorUpdates["prototypeToken.texture.src"] = token;
+  return actorUpdates;
+}
+
+
+function OnPreUpdateItem(item, updateData) {
+  if (item.type !== "species") return;
+  const actor = item.parent;
+  if (!actor) return;
+  _actorUpdateFromSpeciesUpdate(actor.toObject(), item, updateData).then(actorUpdates=>{
+    if (Object.keys(actorUpdates).length > 0) {
+      return actor.update(actorUpdates);
+    }
+  });
+}
+
+function OnPreUpdateActor(actor, actorUpdate) {
+  if (actor.type !== "pokemon") return;
+  if (!actorUpdate.items) return;
+  const itemUpdate = actorUpdate.items.find(i=>i.type === "species");
+  if (!itemUpdate) return;
+  const item = actor.items.get(itemUpdate._id);
+  if (!item) return;
+
+  const actorData = foundry.utils.deepClone(actor.toObject());
+  foundry.utils.mergeObject(actorData, actorUpdate);
+  const itemData = foundry.utils.deepClone(item.toObject());
+  foundry.utils.mergeObject(itemData, itemUpdate);
+
+  _actorUpdateFromSpeciesUpdate(actorData, item, itemData).then(actorUpdates=>{
     if (Object.keys(actorUpdates).length > 0) {
       return actor.update(actorUpdates);
     }
@@ -123,4 +153,5 @@ export function register() {
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.pokemon.prototype.prepareDerivedData", prepareDerivedData, "WRAPPER");
 
   Hooks.on("preUpdateItem", OnPreUpdateItem);
+  Hooks.on("preUpdateActor", OnPreUpdateActor);
 }
