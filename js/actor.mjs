@@ -56,9 +56,69 @@ function prepareDerivedData(wrapper) {
 }
 
 
+function OnPreUpdateItem(item, updateData) {
+  if (item.type !== "species") return;
+  const actor = item.parent;
+  if (!actor) return;
+  if (updateData?.system?.slug && !updateData.name) {
+    updateData.name = updateData.system.slug.titleCase();
+  }
+  // check if the name of the actor is the same as the species item
+  const actorUpdates = {};
+  if (updateData.name && actor.name === item.name) {
+    actorUpdates.name = updateData.name;
+  }
+  if (updateData.name && actor?.prototypeToken?.name === item.name) {
+    actorUpdates["prototypeToken.name"] = updateData.name;
+  }
+
+  const slug = updateData?.system?.slug ?? item?.system?.slug;
+  const dexId = updateData?.system?.number ?? item.system.number;
+  const shiny = actor?.system?.shiny ?? false;
+  const form = updateData?.system?.form ?? item.system.form;
+
+  // update the image/token image
+  return (async()=>{
+    const baseArt = game.ptr.data.artMap.get(slug);
+    if (!baseArt)
+      return {
+        portrait: "icons/svg/mystery-man.svg",
+        token: "icons/svg/mystery-man.svg"
+      };
+    const potraitImg = await game.ptr.util.image.createFromSpeciesData({
+      dexId,
+      shiny,
+      forms: form ? [form] : [],
+    }, baseArt);
+    if (!potraitImg?.result)
+      return {
+        portrait: "icons/svg/mystery-man.svg",
+        token: "icons/svg/mystery-man.svg"
+      };
+    const tokenImg = await game.ptr.util.image.createFromSpeciesData({
+      dexId,
+      shiny,
+      forms: form ? [form, "token"] : ["token"],
+    }, baseArt);
+    return {
+        portrait: potraitImg.result,
+        token: tokenImg?.result ?? potraitImg.result
+    }
+  })().then(({portrait, token})=>{
+    actorUpdates.img = portrait;
+    actorUpdates["prototypeToken.texture.src"] = token;
+    if (Object.keys(actorUpdates).length > 0) {
+      return actor.update(actorUpdates);
+    }
+  });
+}
+
+
 export function register() {
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.humanoid.prototype.prepareBaseData", prepareBaseData, "WRAPPER");
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.humanoid.prototype.prepareDerivedData", prepareDerivedData, "WRAPPER");
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.pokemon.prototype.prepareBaseData", prepareBaseData, "WRAPPER");
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.pokemon.prototype.prepareDerivedData", prepareDerivedData, "WRAPPER");
+
+  Hooks.on("preUpdateItem", OnPreUpdateItem);
 }
