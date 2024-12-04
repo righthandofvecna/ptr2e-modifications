@@ -89,6 +89,7 @@ function OnPreUpdateItem(item, updateData) {
       dexId,
       shiny,
       forms: form ? [form] : [],
+      gender: actor.system?.gender,
     }, baseArt);
     if (!potraitImg?.result)
       return {
@@ -99,6 +100,7 @@ function OnPreUpdateItem(item, updateData) {
       dexId,
       shiny,
       forms: form ? [form, "token"] : ["token"],
+      gender: actor.system?.gender,
     }, baseArt);
     return {
         portrait: potraitImg.result,
