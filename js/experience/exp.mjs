@@ -327,27 +327,32 @@ async function ApplyLevelUp(actor) {
   };
   const newLevel = actorLevel(actor);
 
+  const existingSpecies = actor.system.species || actor.itemTypes.species?.at(0);
+  const esSystem = existingSpecies?.system;
+
   let evolution = (()=>{
     function _getEvolution(evos) {
       if (!evos) return null;
       for (const evo of evos) {
-        if (evo.name === actor.system.species.slug) return evo;
+        if (evo.name === esSystem.slug) return evo;
         const subEvo = _getEvolution(evo.evolutions);
         if (!!subEvo) return subEvo;
       }
       return null;
     }
-    if (!actor.system.species.evolutions) return null;
-    return _getEvolution([actor.system.species.evolutions])
+    if (!esSystem?.evolutions) return null;
+    return _getEvolution([esSystem.evolutions])
   })();
 
   const originalEvolution = evolution;
+
+  let speciesUpdateItem = null;
 
   let evolutionsDenied = new Set();
   const newMoves = []; // the moves you should learn on level-up
   for (let level = oldLevel+1; level <= newLevel; level++) {
     // give moves by level up!
-    newMoves.push(...(actor.system.species.moves.levelUp.filter(m=>m.level === level)));
+    newMoves.push(...(esSystem.moves.levelUp.filter(m=>m.level === level)));
 
     if (!evolution) continue;
 
@@ -381,50 +386,15 @@ async function ApplyLevelUp(actor) {
         evolution = availableEvolutions.find(evo=>evo.name === selectedEvolution);
         const species = await fromUuid(evolution.uuid);
         if (!!species) {
-          const speciesSystem = species.toObject().system;
-          speciesSystem.slug ||= sluggify(speciesSystem.name);
-          actorUpdates["system.species"] = speciesSystem;
+          const speciesUpdate = {};
+          foundry.utils.mergeObject(speciesUpdate, foundry.utils.deepClone(species.toObject()));
+          delete speciesUpdate.id;
+          speciesUpdate._id = existingSpecies.id;
+          speciesUpdate.name = speciesUpdate.name.titleCase();
+          speciesUpdateItem = speciesUpdate;
 
-          // update the actor's image
-          const oldImg = await (async () => {
-            const config = game.ptr.data.artMap.get(actor.system.species.slug);
-            if (!config) return "icons/svg/mystery-man.svg";
-            const resolver = await game.ptr.util.image.createFromSpeciesData(
-              {
-                dexId: actor.system.species.number,
-                shiny: actor.system.shiny,
-                forms: actor.system.species.form ? [actor.system.species.form] : [],
-              },
-              config
-            );
-            return resolver?.result || "icons/svg/mystery-man.svg";
-          })();
-          if (actor.img === oldImg) {
-            actorUpdates.img = await (async () => {
-              const config = game.ptr.data.artMap.get(speciesSystem.slug);
-              if (!config) return actorUpdates.img || actor.img;
-              const resolver = await game.ptr.util.image.createFromSpeciesData(
-                {
-                  dexId: speciesSystem.number,
-                  shiny: actor.system.shiny,
-                  forms: speciesSystem.form ? [speciesSystem.form] : [],
-                },
-                config
-              );
-              return resolver?.result || actorUpdates.img || actor.img;
-            })();
-
-            if (actor.prototypeToken.texture.src === actor.img) {
-              actorUpdates["prototypeToken.texture.src"] = actorUpdates.img;
-            };
-          }
-
-          // if the actor is not nicknamed, rename it
-          if (actor.name === originalEvolution.name.titleCase()) {
-            actorUpdates["name"] = evolution.name.titleCase();
-          }
           // add moves learned at evolution level
-          newMoves.push(...(speciesSystem.moves.levelUp.filter(m=>m.level === level)));
+          newMoves.push(...(species.system.moves.levelUp.filter(m=>m.level === level)));
           ui.notifications.info(`Evolved into ${evolution.name.titleCase()}!`);
         } else {
           ui.notifications.error(`Cannot evolve into ${evolution.name.titleCase()}!`);
@@ -440,6 +410,7 @@ async function ApplyLevelUp(actor) {
   ).flatMap(move => move ?? []);
 
   actorUpdates.items ??= [];
+  if (speciesUpdateItem) actorUpdates.items.push(speciesUpdateItem);
   actorUpdates.items.push(...moves.map(move => move.toObject()));
   actorUpdates["flags.ptr2e-modifications.movesToAdd"] = actorUpdates.items;
 
@@ -454,7 +425,7 @@ async function ApplyLevelUp(actor) {
 
   let message = `<p>${originalName} reached Level ${actor.system.advancement.level}!</p>`;
   if (evolution !== originalEvolution) {
-    message += `<p>${originalName} evolved into ${actor.system?.species?.slug?.titleCase?.() ?? "Nothing"}</p>`;
+    message += `<p>${originalName} evolved into ${existingSpecies?.name ?? "Nothing"}</p>`;
   }
   if (moves.length > 0) {
     message += `<p>${actor.name} learned the following moves:</p><ul>` + moves.reduce((a, m)=>a + `<li>${m.link}</li>`, "") + "</ul>"

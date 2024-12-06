@@ -7,5 +7,6 @@ This module currently does the following:
 - Adds perk prerequisite checking (string parsing) and auto-skill assignment if you can meet the prerequisite by increasing a skill (can be disabled in the settings)
 - Prompts the gm to add a token to an encounter if you add one mid-battle
 - Add settings that disable the automatic token shrinking (making the smallest automatic token a 1x1)
+- Add gender field to the ImageResolver (for species changes only, not in the blueprint generation)
 - A categorized skill system. This is currently hidden from the options, as it's not ready for testing (switching back and forth causes issues)
 - Module compatibility for Item Piles
