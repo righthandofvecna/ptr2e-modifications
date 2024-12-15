@@ -458,19 +458,25 @@ export function OnRenderActorSheetPTRV2(sheet, html) {
   const actor = sheet?.actor;
   if (!actor) return;
 
+  if (!actor.hasPlayerOwner) return;
+
   const expHtml = html.querySelector(".sidebar .experience");
-  if (!!expHtml.querySelector("button")) return;
-  // TODO: the same thing for the bar
+  if (!!expHtml.querySelector("button") && !!expHtml.querySelector("progress")) return;
 
   expHtml.querySelector(".xp-current")?.remove?.();
   expHtml.querySelector(".xp-diff")?.remove?.();
   expHtml.querySelector(".xp-next")?.remove?.();
+
   const experience = actor?.system?.advancement?.experience;
   const pendingXp = actor.getFlag(MODULENAME, "pendingXp") ?? 0
+  
+  if (game.user.isGM) {
+    expHtml.appendChild($(`<div class="pending-xp"><label for="flags.ptr2e-modifications.pendingXp">Pending XP</label><input type="number" name="flags.ptr2e-modifications.pendingXp" value="${pendingXp}" min="0" /></div>`).get(0));
+  }
+
   if (pendingXp >= experience?.diff) {
-    const levelUpButton = document.createElement("button", { class: "button", type: "button" });
-    levelUpButton.appendChild(document.createTextNode("Level Up!"));
-    levelUpButton.style.animation = "glow 1s infinite alternate";
+    const pendingLevel = actorLevel(actor);
+    const levelUpButton = $(`<button class="button" type="button" style="animation: glow 1s infinite alternate" data-tooltip="Level up to Level ${pendingLevel}">Level Up!</button>`).get(0);
     expHtml.appendChild(levelUpButton);
 
     levelUpButton.addEventListener("click", () => ApplyLevelUp(actor), { once: true });
@@ -478,7 +484,7 @@ export function OnRenderActorSheetPTRV2(sheet, html) {
     const xpPrev = levelXp(actor);
     const xpCurr = pendingXp + experience?.current - xpPrev;
     const xpNext = experience?.next - xpPrev;
-    expHtml.appendChild($(`<progress value="${xpCurr}" max="${xpNext}"></progress>`).get(0));
+    expHtml.appendChild($(`<progress value="${xpCurr}" max="${xpNext}" data-tooltip="${xpNext - xpCurr} XP until level"></progress>`).get(0));
   }
 }
 
