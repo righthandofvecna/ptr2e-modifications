@@ -157,7 +157,7 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
   get ber() {
     const apl = this.level;
-    return Math.floor(0.25 * (5 / 4) * (Math.pow(apl + 1, 3) - Math.pow(apl, 3)));
+    return Math.max(10, Math.floor(0.25 * (5 / 4) * (Math.pow(apl + 1, 3) - Math.pow(apl, 3))));
   }
 
   get modifier() {
