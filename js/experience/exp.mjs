@@ -15,6 +15,14 @@ function actorLevel(actor) {
   return Math.clamp(Math.floor(Math.cbrt(((xp || 1) * 6) / 3)), 1, 100);
 }
 
+function levelXp(actor) {
+  const level = actor?.system?.advancement?.level ?? 1;
+  if (actor?.isHumanoid?.()) {
+    return Math.floor( ( level ** 3 ) * 5 / 4 );
+  }
+  return Math.floor( ( level ** 3 ) * 3 / 6 );
+}
+
 export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {//ApplicationV2Expanded) {
   static DEFAULT_OPTIONS = foundry.utils.mergeObject(
     super.DEFAULT_OPTIONS,
@@ -157,7 +165,7 @@ export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
   get ber() {
     const apl = this.level;
-    return Math.floor(0.25 * (5 / 4) * (Math.pow(apl + 1, 3) - Math.pow(apl, 3)));
+    return Math.max(10, Math.floor(0.25 * (5 / 4) * (Math.pow(apl + 1, 3) - Math.pow(apl, 3))));
   }
 
   get modifier() {
@@ -450,24 +458,33 @@ export function OnRenderActorSheetPTRV2(sheet, html) {
   const actor = sheet?.actor;
   if (!actor) return;
 
+  if (!actor.hasPlayerOwner) return;
+
   const expHtml = html.querySelector(".sidebar .experience");
-  if (!!expHtml.querySelector("button")) return;
-  // TODO: the same thing for the bar
+  if (!!expHtml.querySelector("button") && !!expHtml.querySelector("progress")) return;
 
   expHtml.querySelector(".xp-current")?.remove?.();
   expHtml.querySelector(".xp-diff")?.remove?.();
   expHtml.querySelector(".xp-next")?.remove?.();
 
+  const experience = actor?.system?.advancement?.experience;
   const pendingXp = actor.getFlag(MODULENAME, "pendingXp") ?? 0
-  if (pendingXp >= actor?.system?.advancement?.experience?.diff) {
-    const levelUpButton = document.createElement("button", { class: "button", type: "button" });
-    levelUpButton.appendChild(document.createTextNode("Level Up!"));
-    levelUpButton.style.animation = "glow 1s infinite alternate";
+  
+  if (game.user.isGM) {
+    expHtml.appendChild($(`<div class="pending-xp"><label for="flags.ptr2e-modifications.pendingXp">Pending XP</label><input type="number" name="flags.ptr2e-modifications.pendingXp" value="${pendingXp}" min="0" /></div>`).get(0));
+  }
+
+  if (pendingXp >= experience?.diff) {
+    const pendingLevel = actorLevel(actor);
+    const levelUpButton = $(`<button class="button" type="button" style="animation: glow 1s infinite alternate" data-tooltip="Level up to Level ${pendingLevel}">Level Up!</button>`).get(0);
     expHtml.appendChild(levelUpButton);
 
     levelUpButton.addEventListener("click", () => ApplyLevelUp(actor), { once: true });
   } else {
-    // TODO: add a bar?
+    const xpPrev = levelXp(actor);
+    const xpCurr = pendingXp + experience?.current - xpPrev;
+    const xpNext = experience?.next - xpPrev;
+    expHtml.appendChild($(`<progress value="${xpCurr}" max="${xpNext}" data-tooltip="${xpNext - xpCurr} XP until level"></progress>`).get(0));
   }
 }
 

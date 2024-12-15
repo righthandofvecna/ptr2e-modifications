@@ -4,6 +4,8 @@ import { PTR2eSkillGroups } from "./categorized-skill-system/skill-groups-collec
 import { SkillsComponent } from "./categorized-skill-system/skills-component.mjs";
 import { MODULENAME } from "./utils.mjs";
 
+const MYSTERY_MAN = "icons/svg/mystery-man.svg";
+
 
 function prepareBaseData(wrapper) {
   wrapper();
@@ -82,8 +84,8 @@ async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
     const baseArt = game.ptr.data.artMap.get(slug);
     if (!baseArt)
       return {
-        portrait: "icons/svg/mystery-man.svg",
-        token: "icons/svg/mystery-man.svg"
+        portrait: MYSTERY_MAN,
+        token: MYSTERY_MAN,
       };
     const potraitImg = await game.ptr.util.image.createFromSpeciesData({
       dexId,
@@ -93,8 +95,8 @@ async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
     }, baseArt);
     if (!potraitImg?.result)
       return {
-        portrait: "icons/svg/mystery-man.svg",
-        token: "icons/svg/mystery-man.svg"
+        portrait: MYSTERY_MAN,
+        token: MYSTERY_MAN,
       };
     const tokenImg = await game.ptr.util.image.createFromSpeciesData({
       dexId,
@@ -108,8 +110,8 @@ async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
     }
   })()
 
-  actorUpdates.img = portrait;
-  actorUpdates["prototypeToken.texture.src"] = token;
+  if (portrait != MYSTERY_MAN) actorUpdates.img = portrait;
+  if (token != MYSTERY_MAN) actorUpdates["prototypeToken.texture.src"] = token;
   return actorUpdates;
 }
 
@@ -126,6 +128,7 @@ function OnPreUpdateItem(item, updateData) {
 }
 
 function OnPreUpdateActor(actor, actorUpdate) {
+  // Update the sprites when the species is updated
   if (actor.type !== "pokemon") return;
   if (!actorUpdate.items) return;
   const itemUpdate = actorUpdate.items.find(i=>i.type === "species");
@@ -146,6 +149,30 @@ function OnPreUpdateActor(actor, actorUpdate) {
 }
 
 
+// FIX FOR _PARTY CACHING BUG
+
+function _wipeParty(folderId) {
+  const folder = game.folders.get(folderId);
+  if (!folder) return;
+  for (const actor of folder.contents) {
+    actor._party = null;
+  }
+}
+
+function OnUpdateActor(actor, actorUpdate) {
+  if (foundry.utils.hasProperty(actorUpdate, "folder") || foundry.utils.hasProperty(actorUpdate, "system.party.partyMemberOf")) {
+    actor._party = null;
+    for (const folder of game.folders) {
+      _wipeParty(folder.id);
+    }
+  }
+}
+
+function OnDeleteActor(actor) {
+  if (actor.folder?.id) _wipeParty(actor.folder?.id);
+}
+
+
 export function register() {
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.humanoid.prototype.prepareBaseData", prepareBaseData, "WRAPPER");
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.humanoid.prototype.prepareDerivedData", prepareDerivedData, "WRAPPER");
@@ -154,4 +181,7 @@ export function register() {
 
   Hooks.on("preUpdateItem", OnPreUpdateItem);
   Hooks.on("preUpdateActor", OnPreUpdateActor);
+  
+  Hooks.on("updateActor", OnUpdateActor);
+  Hooks.on("deleteActor", OnDeleteActor);
 }

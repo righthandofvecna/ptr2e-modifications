@@ -267,8 +267,6 @@ function actorMeetsPrerequisite(actor, prereq, orDefault) {
   const moveTraitMatch = prereq.match(PrereqRegex.moveTrait);
   if (moveTraitMatch) {
     const hasMove = actor.items.find(p=>p.type === "move" && p?.system?.actions?.contents?.some?.(attack => attack.traits.contents.find(t=>_traitsEqual(t.label, moveTraitMatch.groups.trait))));
-    console.log(hasMove, "satisfies", prereq, moveTraitMatch.groups.trait);
-    console.log(_traitsEqual("Drain X", "Drain 1/2"));
     returnVal.value = !!hasMove;
     return returnVal;
   }

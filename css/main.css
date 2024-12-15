@@ -22,6 +22,9 @@
 .application.sheet.actor.v2 .window-content .tab.active[data-tab=skills] .skill-component.ptr2e-modifications .skill-list .skill.depth-3.skill-group-label {
   margin-left: calc(64px + 0.25rem);
 }
+.application.sheet.actor.v2 .window-content .sidebar .experience progress {
+  width: 100%;
+}
 .application.sheet.skill-sheet .ptr2e-modifications .skills div.skill,
 .application.sheet.skill-sheet .ptr2e-modifications .skills header.skill,
 .application.sheet.skill-sheet .ptr2e-modifications .skills div.skill-group,

@@ -3,23 +3,14 @@ import { MODULENAME } from "./utils.mjs";
 
 
 export function register() {
-  const AttackPTR2e = (()=>{
-    for (const actor of game?.actors?.contents ?? []) {
-      for (const attack of Object.values(actor?.attacks?.actions ?? [])) {
-        return attack.constructor;
-      }
-    }
-  })();
+  const AttackPTR2e = CONFIG.Item.dataModels.move.schema.fields.actions.element.types.attack.model;
 
   if (!(game.settings.get(MODULENAME, "enableAutoStatusMoves") ?? true)) return;
 
-  if (AttackPTR2e) {
-    Object.defineProperty(AttackPTR2e.prototype, "rollable", {
-      get() {
-        return true;
-      }
-    });
-  } else {
-    console.error("NO ACTORS WITH ACTIONS", game, game?.actors, game?.actors?.contents);
-  }
+  // make status actions rollable
+  Object.defineProperty(AttackPTR2e.prototype, "rollable", {
+    get() {
+      return true;
+    }
+  });
 }

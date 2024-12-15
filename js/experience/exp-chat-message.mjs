@@ -38,7 +38,6 @@ class ExperienceMessageSystem extends foundry.abstract.TypeDataModel {
         const data = {
             ...this.toObject(),
         };
-        console.log("expApplied", this.expApplied);
         const expAppliedActors = await Promise.all(this.expApplied.map(async (ea)=>{
             return {
                 // @ts-expect-error
@@ -49,7 +48,6 @@ class ExperienceMessageSystem extends foundry.abstract.TypeDataModel {
                 levelGain: ea.new.level - ea.old.level,
             }
         }));
-        console.log("expAppliedActors", expAppliedActors);
         data.expAppliedActors = expAppliedActors;
         // @ts-expect-error
         data.modifiers = data.modifiers.map(m=>({

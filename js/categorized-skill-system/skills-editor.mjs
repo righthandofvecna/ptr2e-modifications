@@ -625,7 +625,6 @@ export class SkillsEditor extends foundry.applications.api.HandlebarsApplication
       }
     }
 
-    console.log("save skills", skills);
     await this.document.update({
       "system.skills": skills,
       [`flags.${MODULENAME}.skillGroups`]: skillGroups,
