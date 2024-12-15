@@ -15,6 +15,14 @@ function actorLevel(actor) {
   return Math.clamp(Math.floor(Math.cbrt(((xp || 1) * 6) / 3)), 1, 100);
 }
 
+function levelXp(actor) {
+  const level = actor?.system?.advancement?.level ?? 1;
+  if (actor?.isHumanoid?.()) {
+    return Math.floor( ( level ** 3 ) * 5 / 4 );
+  }
+  return Math.floor( ( level ** 3 ) * 3 / 6 );
+}
+
 export class ExpApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {//ApplicationV2Expanded) {
   static DEFAULT_OPTIONS = foundry.utils.mergeObject(
     super.DEFAULT_OPTIONS,
@@ -457,9 +465,9 @@ export function OnRenderActorSheetPTRV2(sheet, html) {
   expHtml.querySelector(".xp-current")?.remove?.();
   expHtml.querySelector(".xp-diff")?.remove?.();
   expHtml.querySelector(".xp-next")?.remove?.();
-
+  const experience = actor?.system?.advancement?.experience;
   const pendingXp = actor.getFlag(MODULENAME, "pendingXp") ?? 0
-  if (pendingXp >= actor?.system?.advancement?.experience?.diff) {
+  if (pendingXp >= experience?.diff) {
     const levelUpButton = document.createElement("button", { class: "button", type: "button" });
     levelUpButton.appendChild(document.createTextNode("Level Up!"));
     levelUpButton.style.animation = "glow 1s infinite alternate";
@@ -467,7 +475,10 @@ export function OnRenderActorSheetPTRV2(sheet, html) {
 
     levelUpButton.addEventListener("click", () => ApplyLevelUp(actor), { once: true });
   } else {
-    // TODO: add a bar?
+    const xpPrev = levelXp(actor);
+    const xpCurr = pendingXp + experience?.current - xpPrev;
+    const xpNext = experience?.next - xpPrev;
+    expHtml.appendChild($(`<progress value="${xpCurr}" max="${xpNext}"></progress>`).get(0));
   }
 }
 
