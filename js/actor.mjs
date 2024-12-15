@@ -160,7 +160,6 @@ function _wipeParty(folderId) {
 }
 
 function OnUpdateActor(actor, actorUpdate) {
-  console.log("OnUpdateActor", arguments);
   if (foundry.utils.hasProperty(actorUpdate, "folder") || foundry.utils.hasProperty(actorUpdate, "system.party.partyMemberOf")) {
     actor._party = null;
     for (const folder of game.folders) {

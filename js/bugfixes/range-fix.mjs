@@ -2,8 +2,6 @@ import { MODULENAME } from "../utils.mjs";
 
 // CONFIG.Item.dataModels.move.schema.fields.actions.element.types.attack.model.prototype.getRangeIncrement
 function Attack_getRangeIncrement(distance, size) {
-  console.log("Attack_getRangeIncrement", arguments);
-
   if (
     distance === null ||
     !this.range ||
@@ -85,8 +83,6 @@ function _get3DSteps(c1, c2) {
 
 // CONFIG.PTR.Grid.square.prototype.getDistanceBetweenTokens
 function Grid_getDistanceBetweenTokens(t1, t2) {
-  console.log("Grid_getDistanceBetweenTokens", t1, t2);
-
   // find the elevation/height differential between the tokens
   const dz = (()=>{
     if (t1.elevation == t2.elevation) return 0;
