@@ -4,6 +4,8 @@ import { PTR2eSkillGroups } from "./categorized-skill-system/skill-groups-collec
 import { SkillsComponent } from "./categorized-skill-system/skills-component.mjs";
 import { MODULENAME } from "./utils.mjs";
 
+const MYSTERY_MAN = "icons/svg/mystery-man.svg";
+
 
 function prepareBaseData(wrapper) {
   wrapper();
@@ -82,8 +84,8 @@ async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
     const baseArt = game.ptr.data.artMap.get(slug);
     if (!baseArt)
       return {
-        portrait: "icons/svg/mystery-man.svg",
-        token: "icons/svg/mystery-man.svg"
+        portrait: MYSTERY_MAN,
+        token: MYSTERY_MAN,
       };
     const potraitImg = await game.ptr.util.image.createFromSpeciesData({
       dexId,
@@ -93,8 +95,8 @@ async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
     }, baseArt);
     if (!potraitImg?.result)
       return {
-        portrait: "icons/svg/mystery-man.svg",
-        token: "icons/svg/mystery-man.svg"
+        portrait: MYSTERY_MAN,
+        token: MYSTERY_MAN,
       };
     const tokenImg = await game.ptr.util.image.createFromSpeciesData({
       dexId,
@@ -108,8 +110,8 @@ async function _actorUpdateFromSpeciesUpdate(actorData, item, speciesData) {
     }
   })()
 
-  actorUpdates.img = portrait;
-  actorUpdates["prototypeToken.texture.src"] = token;
+  if (portrait != MYSTERY_MAN) actorUpdates.img = portrait;
+  if (token != MYSTERY_MAN) actorUpdates["prototypeToken.texture.src"] = token;
   return actorUpdates;
 }
 
