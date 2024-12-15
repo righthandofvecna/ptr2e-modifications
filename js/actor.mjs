@@ -128,6 +128,7 @@ function OnPreUpdateItem(item, updateData) {
 }
 
 function OnPreUpdateActor(actor, actorUpdate) {
+  // Update the sprites when the species is updated
   if (actor.type !== "pokemon") return;
   if (!actorUpdate.items) return;
   const itemUpdate = actorUpdate.items.find(i=>i.type === "species");
@@ -148,6 +149,31 @@ function OnPreUpdateActor(actor, actorUpdate) {
 }
 
 
+// FIX FOR _PARTY CACHING BUG
+
+function _wipeParty(folderId) {
+  const folder = game.folders.get(folderId);
+  if (!folder) return;
+  for (const actor of folder.contents) {
+    actor._party = null;
+  }
+}
+
+function OnUpdateActor(actor, actorUpdate) {
+  console.log("OnUpdateActor", arguments);
+  if (foundry.utils.hasProperty(actorUpdate, "folder") || foundry.utils.hasProperty(actorUpdate, "system.party.partyMemberOf")) {
+    actor._party = null;
+    for (const folder of game.folders) {
+      _wipeParty(folder.id);
+    }
+  }
+}
+
+function OnDeleteActor(actor) {
+  if (actor.folder?.id) _wipeParty(actor.folder?.id);
+}
+
+
 export function register() {
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.humanoid.prototype.prepareBaseData", prepareBaseData, "WRAPPER");
   libWrapper.register(MODULENAME, "CONFIG.PTR.Actor.dataModels.humanoid.prototype.prepareDerivedData", prepareDerivedData, "WRAPPER");
@@ -156,4 +182,7 @@ export function register() {
 
   Hooks.on("preUpdateItem", OnPreUpdateItem);
   Hooks.on("preUpdateActor", OnPreUpdateActor);
+  
+  Hooks.on("updateActor", OnUpdateActor);
+  Hooks.on("deleteActor", OnDeleteActor);
 }
